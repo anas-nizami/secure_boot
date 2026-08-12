@@ -1,0 +1,27 @@
+# ---- SECRETS: never commit ----
+keys/*.pem
+keys/*.key
+*_private*
+*.priv
+
+# Build output
+build/
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+
+# IDE
+.vscode/
+Debug/
+Release/
+*.uvguix.*
+.settings/
+.metadata/
+
+# Python
+__pycache__/
+*.pyc
+venv/
