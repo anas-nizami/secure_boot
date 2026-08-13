@@ -18,11 +18,10 @@ What has value here — to me, and to an attacker?
 | Asset | Why it matters | Impact if compromised |
 |---|---|---|
 | Application firmware integrity | Device must run only code I authored | Attacker executes arbitrary code with full hardware access |
-| *(your turn)* | | |
-| *(your turn)* | | |
-
-Prompts: the signing private key. The public key in flash. The rollback counter. Any
-secrets the app holds. The debug interface itself.
+| Signing Private Key | Single most important thing that makes a signature unforgeable | An attacker can sign arbitrary firmware that every device accepts |
+| Bootloader code | Root of trust — nothing verifies it | Attacker patches out the signature check. All crypto becomes inert |
+| Monotonic rollback counter | Records highest version ever booted; provides freshness, which signatures cannot | Attacker downgrades to a genuinely-signed but known-vulnerable release |
+| Debug interface (SWD) | Can alter execution by reading or writing the flash, RAM and CPU | Override the verofocation result. Results of failed verication can be altered to pass |
 
 ---
 
