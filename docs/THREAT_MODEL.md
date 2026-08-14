@@ -16,12 +16,13 @@
 What has value here — to me, and to an attacker?
 
 | Asset | Why it matters | Impact if compromised |
-|---|---|---|
+| --- | --- | --- |
 | Application firmware integrity | Device must run only code I authored | Attacker executes arbitrary code with full hardware access |
 | Signing Private Key | Single most important thing that makes a signature unforgeable | An attacker can sign arbitrary firmware that every device accepts |
 | Bootloader code | Root of trust — nothing verifies it | Attacker patches out the signature check. All crypto becomes inert |
 | Monotonic rollback counter | Records highest version ever booted; provides freshness, which signatures cannot | Attacker downgrades to a genuinely-signed but known-vulnerable release |
-| Debug interface (SWD) | Can alter execution by reading or writing the flash, RAM and CPU | Override the verofocation result. Results of failed verication can be altered to pass |
+| Debug interface (SWD) | Can alter execution by reading or writing the flash, RAM and CPU | Override the verification result. Results of failed verication can be altered to pass |
+| Verification public key (bootloader flash) | Not secret, but must not be replaceable — it is the anchor every check is made against | Attacker substitutes their own public key and signs firmware the device will accept |
 
 ---
 
@@ -30,14 +31,20 @@ What has value here — to me, and to an attacker?
 Define capability levels — this is what bounds the whole design.
 
 | Adversary | Capabilities | In scope? |
-|---|---|---|
+| --- | --- | --- |
 | Remote attacker | Can send crafted firmware over the update channel; no physical access | Yes |
-| *(your turn)* | | |
-| *(your turn)* | | |
+| Attacker with physical access | Can use SWD or other debub feature | Yes |
+| Employee with correct credentials | Can access and modify the firmware during early development | No - keys and build systems need oganizational level control and security |
+| Attacker with access to the device before consumer gets it | Someone with access during supply chain can falsh whatever they want. They can do it before  RDP and WRP are set | Yes |
+| Skilled attacker with access to lab equipment | Can perform litching, power analysis, decapping, direct flash removal | No, no countermeasures exist in this design, and defending against it needs hardware support this part doesn't have.|
 
-Prompts: attacker with brief physical access and an ST-Link. Attacker with unlimited
-physical access and lab equipment. Malicious insider with the signing key. Supply-chain
-attacker who modifies flash before you receive the board.
+RDP - Read Out Protection : Controls whether external tools can read falsh or not. It has 3 levels.
+
+1. Level 0 : No protection - Debugger reads and writes everything.
+2. Level 1 : Falsh unreadable via a debugger - User can still connect SWD, but any attempt to read flash triggers a mass erase of the entire chip.
+3. Level 2 : Debug interface permanently disabled - No SWD, no JTAG, no boot from RAM or system memory. Irreversible. There is no way back, ever.
+
+WRP - Write Protection : Marks chosen flash sectors read-only at the hardware level
 
 ---
 
@@ -46,7 +53,7 @@ attacker who modifies flash before you receive the board.
 For each: the attack, the mitigation, and which phase implements it.
 
 | # | Attack | Mitigation | Phase |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | A1 | Attacker rewrites app flash with malicious image | Bootloader verifies ECDSA signature before execution; unsigned image refused | 3 |
 | A2 | *(your turn)* | | |
 | A3 | *(your turn)* | | |
