@@ -1,12 +1,12 @@
 /*============================================================================
- * STM32F407 Discovery - GPIOD LED blink
+ * STM32F407 Discovery - blink the green LED forever
  * GNU as (arm-none-eabi) syntax, for STM32CubeIDE / arm-none-eabi-gcc
  *
- *   PD12 = green, PD13 = orange, PD14 = red, PD15 = blue
+ *   PD12 = green
  *
  * Exposed to C as:
  *     extern void gpio_init(void);
- *     extern void gpio_blink(void);
+ *     extern void blink_green(void);   // does not return
  *===========================================================================*/
 
     .syntax unified                 @ required: enables 32-bit Thumb-2 encodings
@@ -31,21 +31,18 @@
     .equ    MODER_MASK,     0xFF000000          @ both bits of pins 12-15
     .equ    MODER_OUTPUTS,  (MODER_GREEN | MODER_ORANGE | MODER_RED | MODER_BLUE)
 
-    .equ 	INIT_BLINK_CYCLE, 5				@During the init we will blink all 4 LED's 5 times.
-
     .equ    LED_GREEN,      (1 << 12)
-    .equ    LED_ORANGE,     (1 << 13)
-    .equ    LED_RED,        (1 << 14)
-    .equ    LED_BLUE,       (1 << 15)
 
-    .equ    QSEC,           1333333
+    @ ~3 cycles per delay iteration. At the 16 MHz HSI default:
+    @   16000000 / 3 ~= 5333333 iterations per second.
+    .equ    HSEC,           2666666             @ half a second on / off
 
 /*----------------------------------- code ----------------------------------*/
     .section .text
 
 /*
  * gpio_init - enable the GPIOD clock, set PD12-PD15 to output mode.
- * Clobbers r0-r2 (caller-saved under AAPCS, no save/restore needed).
+ * Leaf function. Clobbers r0-r2 (caller-saved under AAPCS, nothing to save).
  */
     .global gpio_init
     .type   gpio_init, %function
@@ -72,74 +69,35 @@ gpio_init:
     .size   gpio_init, . - gpio_init
 
 /*
- * gpio_blink - cycle the four LEDs forever. Does not return.
- * r1 holds the ODR address for the lifetime of the loop.
+ * blink_green - toggle PD12 forever, half a second on, half a second off.
+ * Does not return.
+ *
+ *   r1 = GPIOD_ODR address, held for the lifetime of the loop
+ *   r0 = value written to ODR
+ *   r3 = delay counter (consumed by delay)
  */
-    .global gpio_blink
-    .type   gpio_blink, %function
-    .thumb_func
-gpio_blink:
-    push    {r4, lr}                    @ r4 is callee-saved; lr is clobbered by bl
-    ldr     r1, =GPIOD_ODR          	@ loaded here, NOT inherited from gpio_init
-    mov		r4, #INIT_BLINK_CYCLE
-
-blink_loop:
-    bl		blink_green
-    bl      delay
-
-    bl		blink_orange
-    bl      delay
-
-    bl		blink_red
-    bl      delay
-
-    bl 		blink_blue
-    bl      delay
-
-    subs    r4, r4, #1              @ S-suffix: updates the flag for how many times the cycle has run
-    bne     blink_loop              @ re-enter AFTER the ODR load
-
-    str     r0, [r1]
-
-    pop     {r4, pc}                @ restore r4 and return in one instruction
-    .size   gpio_blink, . - gpio_blink
-
-    .type   blink_red, %function
-    .thumb_func
-blink_red:
-	movw    r0, #LED_RED
-    str     r0, [r1]
-    ldr     r3, =QSEC
-    bx      lr
-    .size   blink_red, . - blink_red
-
-    .type   blink_orange, %function
-    .thumb_func
-blink_orange:
-	movw    r0, #LED_ORANGE
-    str     r0, [r1]
-    ldr     r3, =QSEC
-    bx      lr
-    .size   blink_orange, . - blink_orange
-
-	.global blink_green
-	.type   blink_green, %function
+    .global blink_green
+    .type   blink_green, %function
     .thumb_func
 blink_green:
-	movw    r0, #LED_GREEN
-    str     r0, [r1]
-    ldr     r3, =QSEC
-    bx      lr
-    .size   blink_green, . - blink_green
+    push    {lr}                    @ non-leaf: the bl below clobbers lr
+    ldr     r1, =GPIOD_ODR          @ loaded once; the loop re-enters below it
 
-.type   blink_blue, %function
-    .thumb_func
-blink_blue:
-	movw    r0, #LED_BLUE
+green_loop:
+    movw    r0, #LED_GREEN          @ movw, not movs: 1<<12 exceeds the 8-bit
+    str     r0, [r1]                @ immediate that movs can encode
+    ldr     r3, =HSEC
+    bl      delay
+
+    movs    r0, #0                  @ 0 fits in movs
     str     r0, [r1]
-    ldr     r3, =QSEC
-    bx      lr
-    .size   blink_blue, . - blink_blue
+    ldr     r3, =HSEC
+    bl      delay
+
+    b       green_loop              @ re-enter AFTER the ODR load
+
+    pop     {pc}                    @ unreachable
+    .size   blink_green, . - blink_green
 
 /*
  * delay - busy-wait for r3 iterations. Leaf function, clobbers r3 only.
@@ -147,7 +105,7 @@ blink_blue:
     .type   delay, %function
     .thumb_func
 delay:
-    subs    r3, r3, #1
+    subs    r3, r3, #1              @ S-suffix: bne reads the flags this writes
     bne     delay
     bx      lr
     .size   delay, . - delay

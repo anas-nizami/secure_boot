@@ -47,9 +47,10 @@ MEMORY
 {
   CCMRAM    (xrw)    : ORIGIN = 0x10000000,   LENGTH = 64K
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K
-  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 64K
+  FLASH    (rx)    : ORIGIN = 0x08020200, LENGTH = 384K - 512
 }
 
+ASSERT(ORIGIN(FLASH) % 512 == 0, "App base must be 512-byte aligned for VTOR")
 /* Sections */
 SECTIONS
 {

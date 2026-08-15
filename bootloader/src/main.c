@@ -17,14 +17,52 @@
  */
 
 #include <stdint.h>
+#include <blinker.h>
 
-extern void gpio_init(void);
-extern void gpio_blink(void);
+#define APP_BASE 0x08020200u
+
+/* System Control Block */
+#define SCB_VTOR        (*(volatile uint32_t *)0xE000ED08u)
+
+/* SysTick */
+#define SYSTICK_CTRL    (*(volatile uint32_t *)0xE000E010u)
+#define SYSTICK_LOAD    (*(volatile uint32_t *)0xE000E014u)
+#define SYSTICK_VAL     (*(volatile uint32_t *)0xE000E018u)
+
+typedef void (*app_entry_t)(void);
+
+static void jump_to_app(uint32_t base)
+{
+    uint32_t msp   = *(volatile uint32_t *)(base);      /* vector[0] */
+    uint32_t entry = *(volatile uint32_t *)(base + 4);  /* vector[1] */
+
+    /* mask all interrupts */
+    __asm volatile ("cpsid i" ::: "memory");
+
+    /* stop SysTick so it can't fire into a stale vector table */
+    SYSTICK_CTRL = 0;
+    SYSTICK_LOAD = 0;
+    SYSTICK_VAL  = 0;
+
+    /* point the vector table at the app */
+    SCB_VTOR = base;
+
+    /* adopt the app's stack pointer */
+    __asm volatile ("msr msp, %0" :: "r" (msp) : );
+
+    /* flush pipeline so the new VTOR/MSP take effect before the branch */
+    __asm volatile ("dsb" ::: "memory");
+    __asm volatile ("isb" ::: "memory");
+
+    ((app_entry_t)entry)();   /* never returns */
+}
 
 int main(void)
 {
 	gpio_init();
 	gpio_blink();
+
+	jump_to_app(APP_BASE);
 
 	return 0;
 
