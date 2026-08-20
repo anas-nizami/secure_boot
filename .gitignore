@@ -25,3 +25,7 @@ Release/
 __pycache__/
 *.pyc
 venv/
+
+# Miscellaneous
+*.exe
+nul
