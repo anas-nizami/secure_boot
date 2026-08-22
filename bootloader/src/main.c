@@ -18,8 +18,11 @@
 
 #include <stdint.h>
 #include <blinker.h>
+#include <sha_256.h>
+#include <img_header.h>
 
 #define APP_BASE 0x08020200u
+#define APP_HEADER_ADDR 0x08020000u
 
 /* System Control Block */
 #define SCB_VTOR        (*(volatile uint32_t *)0xE000ED08u)
@@ -30,6 +33,12 @@
 #define SYSTICK_VAL     (*(volatile uint32_t *)0xE000E018u)
 
 typedef void (*app_entry_t)(void);
+
+void refuse()
+{
+	set_red();
+	for (;;) { }
+}
 
 static void jump_to_app(uint32_t base)
 {
@@ -60,9 +69,36 @@ static void jump_to_app(uint32_t base)
 int main(void)
 {
 	gpio_init();
-	gpio_blink();
 
-	jump_to_app(APP_BASE);
+	const img_header_t *hdr = (const img_header_t *)APP_HEADER_ADDR;
+	const uint8_t *body     = (const uint8_t *)APP_BODY_ADDR;
+
+	if(hdr->magic != IMG_MAGIC)
+	{
+		refuse();
+	}
+
+	if (hdr->img_len == 0 || hdr->img_len > APP_SLOT_SIZE - IMG_HEADER_SIZE)
+	{
+		refuse();
+	}
+
+	sha256_ctx ctx;
+	uint8_t computed[32];
+
+	sha256_init(&ctx);
+	sha256_update(&ctx, body, hdr->img_len);
+	sha256_final(&ctx, computed);
+
+	if (memcmp(computed, hdr->hash, 32) != 0)
+	{
+		refuse();
+	}
+
+	gpio_blink();
+	jump_to_app(APP_BODY_ADDR);
+
+	for (;;) { }
 
 	return 0;
 

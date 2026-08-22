@@ -1,3 +1,14 @@
+/**
+ * @file parser.h
+ * @brief RSP file parser for NIST test vectors.
+ *
+ * Test-harness support code, 
+ * 
+ * ***** AI-generated and reviewed. Not part of the bootloader *********; 
+ * 
+ * no parser code is compiled into the target image.
+ */
+
 #ifndef PARSER_H
 #define PARSER_H
 

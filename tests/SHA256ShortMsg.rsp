@@ -3,7 +3,7 @@
 #  SHA-256 tests are configured for BYTE oriented implementations
 #  Generated on Tue Mar 15 08:23:38 2011
 
-#[L = 32]
+[L = 32]
 
 Len = 0
 Msg = 00

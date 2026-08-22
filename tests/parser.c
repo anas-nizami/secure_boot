@@ -1,4 +1,14 @@
 /* Parse NIST SHA-256 short-message response files (SHA256ShortMsg.rsp). */
+/**
+ * @file parser.c
+ * @brief RSP file parser for NIST test vectors.
+ *
+ * Test-harness support code, 
+ * 
+ * ***** AI-generated and reviewed. Not part of the bootloader *********; 
+ * 
+ * no parser code is compiled into the target image.
+ */
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

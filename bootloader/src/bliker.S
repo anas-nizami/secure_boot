@@ -122,7 +122,6 @@ blink_orange:
     bx      lr
     .size   blink_orange, . - blink_orange
 
-	.global blink_green
 	.type   blink_green, %function
     .thumb_func
 blink_green:
@@ -140,6 +139,20 @@ blink_blue:
     ldr     r3, =QSEC
     bx      lr
     .size   blink_blue, . - blink_blue
+
+/*
+ * set_red - drive PD14 high, other PORTD LEDs low. Callable from C.
+ * Leaf function. Clobbers r0-r1.
+ */
+    .global set_red
+    .type   set_red, %function
+    .thumb_func
+set_red:
+    ldr     r1, =GPIOD_ODR          @ loaded here; r1 is NOT inherited
+    movw    r0, #LED_RED
+    str     r0, [r1]
+    bx      lr
+    .size   set_red, . - set_red
 
 /*
  * delay - busy-wait for r3 iterations. Leaf function, clobbers r3 only.
