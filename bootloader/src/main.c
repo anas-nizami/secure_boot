@@ -17,11 +17,11 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 #include <blinker.h>
 #include <sha_256.h>
 #include <img_header.h>
 
-#define APP_BASE 0x08020200u
 #define APP_HEADER_ADDR 0x08020000u
 
 /* System Control Block */
@@ -36,6 +36,7 @@ typedef void (*app_entry_t)(void);
 
 void refuse()
 {
+	//Blink RED LED (Present on board) to indicate failure and halt the system
 	set_red();
 	for (;;) { }
 }

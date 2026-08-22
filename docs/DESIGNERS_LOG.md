@@ -3,6 +3,8 @@
 Decisions taken during implementation, and the reasoning behind them. Recorded
 here so the choices are reviewable rather than implicit in the code.
 
+SOME RESPONSES RECOREDED HER ARE AI GENERATED, SINCE THEY WERE MORE CLEAR AND CONCISE.
+
 ---
 
 ## Memory layout
@@ -37,7 +39,7 @@ dispatch through the bootloader's table with no fault to indicate why.
 The alignment requirement is asserted in the application's linker script rather
 than relied upon:
 
-```
+```ld
 ASSERT(ORIGIN(FLASH) % 512 == 0, "App base must be 512-byte aligned for VTOR")
 ```
 
@@ -139,24 +141,10 @@ might proceed.
 
 ## Testing
 
-The host test suite compiles with `-fsanitize=undefined,address`. This is not
-optional tooling: it identified a signed-overflow defect in the message
-schedule endian conversion that produced correct output on this compiler and
-would not have been found by inspection. `block[i]` is `uint8_t` and promotes
-to `int`; `0x80 << 24` exceeds `INT_MAX`. The 0x80 padding byte guarantees the
-condition occurs on every hash computed.
-
-Validation covers the NIST CAVS ShortMsg vectors plus the empty string, "abc",
-the 55- and 56-byte padding boundary cases, and a 1,000,000-byte message fed
-through 1,000 separate `update` calls to exercise buffering across block
-boundaries.
-
-One observation worth recording: an earlier version passed `sizeof(padding)`
-rather than `padding_length + 8` to `update`, and produced correct digests
-regardless. The surplus zero bytes always land beyond the final transform
-boundary and are discarded. Code that is accidentally correct is worse than
-code that is wrong — the defect is invisible to testing and a later refactor
-breaks it silently.
+`tests/test_sha256.c` runs the 65 NIST CAVS SHA-256 ShortMsg vectors
+(0–512 bits), compiled with `-fsanitize=undefined`. This covers the
+empty-string case and the 55-/56-byte padding-boundary lengths, but caps
+at 64 bytes — the multi-block path in `sha256_update` is not yet tested.
 
 ---
 

@@ -1,6 +1,6 @@
 
-#ifndef MATH_UTILS_H    // Include guard: checks if MATH_UTILS_H is not defined
-#define MATH_UTILS_H    // Defines MATH_UTILS_H
+#ifndef BLINKER_H    // Include guard: checks if BLINKER_H is not defined
+#define BLINKER_H    // Defines BLINKER_H
 
 extern void gpio_init(void);
 extern void gpio_blink(void);

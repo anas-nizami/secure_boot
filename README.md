@@ -15,18 +15,62 @@ rests on.
 
 ## Design
 
-```
-   BOOTLOADER  (sectors 0-3, 0x08000000, write-protected)
-     1. read image header from app slot
-     2. SHA-256 over the firmware body
-     3. verify ECDSA-P256 signature over that hash
-        against a public key held in bootloader flash
-     4. valid   -> relocate VTOR, set MSP, jump
-        invalid -> refuse, signal fault, halt
-                        |
-                        v
-   APPLICATION  (sectors 5-7, 0x08020000)
-     [ 128-byte signed header | firmware image ]
+```text
+POWER ON / RESET
+      │
+      ▼
+┌─────────────────────────────────────┐
+│ ST mask ROM  (not yours, unchanged) │
+│ BOOT0 low → jump to 0x08000000      │
+└─────────────────────────────────────┘
+      │
+      ▼
+╔═════════════════════════════════════════════════╗
+║ YOUR BOOTLOADER  @ 0x08000000  (sectors 0–3)    ║
+╠═════════════════════════════════════════════════╣
+║                                                 ║
+║  init clocks, GPIO (LEDs)                       ║
+║           │                                     ║
+║           ▼                                     ║
+║  read header @ 0x08020000                       ║
+║           │                                     ║
+║           ▼                                     ║
+║     magic == 0x4E495A41 ? ──── no ──┐           ║
+║           │ yes                     │           ║
+║           ▼                         │           ║
+║     img_len sane ? ────────── no ───┤           ║
+║           │ yes                     │           ║
+║           ▼                         │           ║
+║  ┌──────────────────────────┐       │           ║
+║  │ SHA-256 over body        │       │  PHASE 2  ║
+║  │ 0x08020200 .. +img_len   │       │           ║
+║  └──────────────────────────┘       │           ║
+║           │                         │           ║
+║           ▼                         │           ║
+║     hash == header.hash ? ─── no ───┤           ║
+║           │ yes                     │           ║
+║           ▼                         │           ║
+║  ┌──────────────────────────┐       │           ║
+║  │ ECDSA-P256 verify        │       │  PHASE 3  ║
+║  │ sig over hash, pubkey    │       │           ║
+║  └──────────────────────────┘       │           ║
+║           │                         │           ║
+║           ▼                         │           ║
+║     signature valid ? ─────── no ───┤           ║
+║           │ yes                     │           ║
+║           ▼                         │           ║
+║     version >= counter ? ──── no ───┤  PHASE 4  ║
+║           │ yes                     │           ║
+║           ▼                         ▼           ║
+║      JUMP TO APP                REFUSE          ║
+║           │                    red LED          ║
+║           │                    halt forever     ║
+╚═══════════│═════════════════════════════════════╝
+            ▼
+┌─────────────────────────────────────┐
+│ APPLICATION @ 0x08020200            │
+│ green LED, runs normally            │
+└─────────────────────────────────────┘
 ```
 
 ### Flash map (STM32F407VG, 1 MB)
@@ -61,18 +105,18 @@ bootloader itself.
 ## Repository layout
 
 ```
-bootloader/     bootloader sources and linker script
+bootloader/     bootloader sources, SHA_256 implementation and linker script
 app/            demo application, linked at 0x08020000
-tools/          host-side image signing and upload utilities (Python)
+tools/          host-side image signing (Correct and corrupted) and Python script for signing
 tests/          SHA-256 test vectors, host-side verification harness
 docs/           threat model, design notes, engineering log
 ```
 
 ## Roadmap
 
-- [ ] Phase 0 — threat model, repo, concepts
-- [ ] Phase 1 — bootloader jumps to application
-- [ ] Phase 2 — SHA-256 integrity check, tampered image refused
+- [x] Phase 0 — threat model, repo, concepts
+- [x] Phase 1 — bootloader jumps to application
+- [x] Phase 2 — SHA-256 integrity check, tampered image refused
 - [ ] Phase 3 — ECDSA signature verification, wrong-key image refused
 - [ ] Phase 4 — flash write protection, RDP, anti-rollback counter
 - [ ] Phase 5 — signed firmware update over UART with A/B slots
