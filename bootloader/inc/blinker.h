@@ -4,5 +4,6 @@
 
 extern void gpio_init(void);
 extern void gpio_blink(void);
+extern void set_red();
 
 #endif // BLINKER_H

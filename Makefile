@@ -1,4 +1,4 @@
-# Makefile for building SHA-256 implementation and tests (sha_256 files are in tests/)
+# Makefile for building SHA-256 implementation and tests (sha_256 files are in SHA_256/)
 
 CC := gcc
 CFLAGS := -Wall -Wextra -std=c11 -I./tests -I./SHA_256 -fsanitize=undefined -O2

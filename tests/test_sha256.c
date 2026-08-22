@@ -69,6 +69,11 @@ int main(void) {
         printf("\033[1;32m");
         printf("**ALL RSP TESTS PASSED!**\n");
         printf("\033[0m");
+    }else
+    {
+        printf("\033[1;31m");
+        printf("**ONE OR MORE RSP TESTS FAILED!**\n");
+        printf("\033[0m");
     }
 
     return 0;
