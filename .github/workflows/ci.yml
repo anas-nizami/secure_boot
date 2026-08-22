@@ -1,0 +1,19 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  sha_imp_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and test
+        run: make run
+    
+      - name: Cross-compile for target
+        run: |
+          sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
+          arm-none-eabi-gcc -c -std=c11 -Wall -Wextra \
+            -mcpu=cortex-m4 -mthumb -I./bootloader/SHA_256 \
+            bootloader/SHA_256/sha_256.c -o /dev/null

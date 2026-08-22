@@ -5,7 +5,15 @@ MAGIC = 0x4E495A41
 HEADER_SIZE = 512
 
 def build(app_bin, out_bin, version):
-    body = open(app_bin, 'rb').read()       # Read the application binary file in binary mode, without the b in rb, it would read it in text mode, which could cause issues with binary data.
+    try:
+        with open(app_bin, 'rb') as f:
+            body = f.read()  # Read the application binary file in binary mode, without the b in rb, it would read it in text mode, which could cause issues with binary data.
+    except FileNotFoundError:
+        print(f"Error: File not found - {app_bin}")
+        sys.exit(1)
+    except IOError:
+        print(f"Error: Unable to read file - {app_bin}")
+        sys.exit(1)
 
     digest = hashlib.sha256(body).digest()  # Hash the whole file in one call. .digest() gives 32 raw bytes, .hexdigest() gives a hex string. We want the raw bytes for the header.
 
