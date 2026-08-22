@@ -2,7 +2,7 @@
 # This MakeFile will not run or compile the boot loader, it is only for testing the SHA-256 implementation.
 
 CC := gcc
-CFLAGS := -Wall -Wextra -std=c11 -I./tests -I./bootloader/SHA_256
+CFLAGS := -Wall -Wextra -Werror -std=c11 -I./tests -I./bootloader/SHA_256
 SAN    := -fsanitize=undefined,address
 LDFLAGS :=
 

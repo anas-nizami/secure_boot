@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <sha_256.h>
+#include "sha_256.h"
 #include <stdbool.h>
 #include <string.h>
 
@@ -67,7 +67,7 @@ int main(void) {
         printf("No RSP test vectors found or failed to parse the file.\n");
         return 1;
     }
-    
+
     printf("Parsed %zu RSP test vectors\n", nvectors);
     if (nvectors > 0 && test_rsp_vectors(vectors, nvectors))
     {
