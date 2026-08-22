@@ -1,3 +1,5 @@
+![CI](https://github.com/anas-nizami/secure_boot/actions/workflows/ci.yml/badge.svg)
+
 # STM32F407 Secure Boot
 
 A bare-metal secure bootloader for the STM32F407 (Cortex-M4) that verifies an
