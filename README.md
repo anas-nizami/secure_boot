@@ -6,6 +6,8 @@ and refuses to boot tampered or unsigned images.
 
 > **Status:** in development. See [Roadmap](#roadmap).
 
+![CI](https://github.com/anas-nizami/secure_boot/actions/workflows/ci.yml/badge.svg)
+
 ## Why
 
 Firmware running without verification means anyone who can write flash can run code with
