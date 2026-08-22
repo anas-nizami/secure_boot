@@ -1,5 +1,3 @@
-![CI](https://github.com/anas-nizami/secure_boot/actions/workflows/ci.yml/badge.svg)
-
 # STM32F407 Secure Boot
 
 A bare-metal secure bootloader for the STM32F407 (Cortex-M4) that verifies an
@@ -7,6 +5,8 @@ ECDSA-P256 signature over a SHA-256 image hash before executing application firm
 and refuses to boot tampered or unsigned images.
 
 > **Status:** in development. See [Roadmap](#roadmap).
+
+![CI](https://github.com/anas-nizami/secure_boot/actions/workflows/ci.yml/badge.svg)
 
 ## Why
 
