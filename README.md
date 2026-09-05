@@ -22,7 +22,7 @@ POWER ON / RESET
       │
       ▼
 ┌─────────────────────────────────────┐
-│ ST mask ROM  (not yours, unchanged) │
+│ ST mask ROM  (not MINE, unchanged) │
 │ BOOT0 low → jump to 0x08000000      │
 └─────────────────────────────────────┘
       │
@@ -31,7 +31,7 @@ POWER ON / RESET
 ║ YOUR BOOTLOADER  @ 0x08000000  (sectors 0–3)    ║
 ╠═════════════════════════════════════════════════╣
 ║                                                 ║
-║  init clocks, GPIO (LEDs)                       ║
+║  init clocks, GPIO (LEDs blink)                 ║
 ║           │                                     ║
 ║           ▼                                     ║
 ║  read header @ 0x08020000                       ║

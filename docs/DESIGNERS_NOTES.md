@@ -3,8 +3,6 @@
 Decisions taken during implementation, and the reasoning behind them. Recorded
 here so the choices are reviewable rather than implicit in the code.
 
-SOME RESPONSES RECOREDED HER ARE AI GENERATED, SINCE THEY WERE MORE CLEAR AND CONCISE.
-
 ---
 
 ## Memory layout
@@ -16,12 +14,15 @@ The linker script limits the bootloader to sectors 0–3 rather than the full
 overwriting the metadata sector. The cap is enforced now, before SHA-256 and
 micro-ecc are linked in, so any future overrun is caught at build time.
 
+If you are wondering why 64? I picked 64 becasue its a round number and the address ends at 0x08010000 and It will amke the arithmetic easire.
+We could do 4KB (Sector 0-2) but we have 1 MB of total space so we are not going to run out of space anyway.  
+
 ### Bootloader heap set to zero
 
 No dynamic allocation in the bootloader. Fragmentation and non-deterministic
-allocation latency are unacceptable in a component with no recovery path, and
-an allocation failure at boot has nowhere to go. All buffers are statically
-sized. Setting the heap to zero also turns any accidental dependency on
+allocation latency are very dangerous since the bootloader has no recovery path, and
+an allocation failure at boot has nowhere to go.
+All buffers are statically sized. Setting the heap to zero also turns any accidental dependency on
 `malloc` into a link error.
 
 The application's linker script is independent and unaffected — the bootloader
