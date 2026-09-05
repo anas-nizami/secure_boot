@@ -70,6 +70,7 @@ static void jump_to_app(uint32_t base)
 int main(void)
 {
 	gpio_init();
+	gpio_blink();
 
 	const img_header_t *hdr = (const img_header_t *)APP_HEADER_ADDR;
 	const uint8_t *body     = (const uint8_t *)APP_BODY_ADDR;
@@ -96,7 +97,7 @@ int main(void)
 		refuse();
 	}
 
-	gpio_blink();
+
 	jump_to_app(APP_BODY_ADDR);
 
 	for (;;) { }

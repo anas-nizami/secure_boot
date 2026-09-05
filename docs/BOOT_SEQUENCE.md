@@ -28,12 +28,12 @@ The core has no knowledge of what is mapped there; BOOT0/BOOT1 decided that.
 
 ## 4. Bootloader Reset_Handler
 
-Startup assembly copies .data from flash to RAM, zeroes .bss, then
+Startup code copies .data from flash to RAM, zeroes .bss  section, and then
 branches to main().
 
 ## 5. Bootloader main()
 
-Initialises GPIO and runs the LED indication loop. This routine must
+Initialises GPIO bus and clock. Runs the LED indication loop. This routine must
 RETURN — if it loops forever the handoff below is never reached.
 
 ## 6. Mask interrupts
