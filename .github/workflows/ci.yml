@@ -1,9 +1,11 @@
 name: CI
 
-on: [push, pull_request]
-
+on: 
+  push:
+    branches: [ master ]
+  pull_request:
 jobs:
-  sha_imp_test:
+  SHA256_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +22,7 @@ jobs:
             -mcpu=cortex-m4 -mthumb -I./bootloader/SHA_256 \
             bootloader/SHA_256/sha_256.c -o /dev/null
   
-  verify_ecc_test:
+  MICRO_ECC_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
