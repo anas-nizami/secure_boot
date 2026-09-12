@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Build and test
         run: make run_sha256
@@ -31,5 +33,5 @@ jobs:
           sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
           arm-none-eabi-gcc -c -std=c11 -Wall -Wextra -Wno-unused-parameter \
             -mcpu=cortex-m4 -mthumb \
-            -I./third_party/micro-ecc \
-            third_party/micro-ecc/uECC.c -o /dev/null
+            -I./bootloader/third_party/micro-ecc \
+            bootloader/third_party/micro-ecc/uECC.c -o /dev/null

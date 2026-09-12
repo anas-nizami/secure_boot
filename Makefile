@@ -4,14 +4,13 @@
 CC := gcc
 CFLAGS := -Wall -Wextra -Werror -std=c11 -I./tests -I./bootloader/SHA_256
 CFLAGS_ECC := -Wall -Wextra -std=c11 -Wno-unused-parameter \
-              -I./tests -I./third_party/micro-ecc -I./bootloader/inc
+              -I./tests -I./bootloader/third_party/micro-ecc -I./bootloader/inc
 SAN    := -fsanitize=undefined,address
 LDFLAGS :=
 
 SRC := ./bootloader/SHA_256/sha_256.c
 SHA_TEST_SRC:= ./tests/test_sha256.c ./tests/parser.c
-MICRO_ECC_SRC := ./third_party/micro-ecc/uECC.c
-MICRO_ECC_INC := ./third_party/micro-ecc/uECC.h
+MICRO_ECC_SRC := ./bootloader/third_party/micro-ecc/uECC.c
 MICRO_ECC_TEST := ./tests/test_ecc.c
 
 OUT := ./tests/test_sha256.exe

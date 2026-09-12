@@ -21,6 +21,8 @@
 #include <blinker.h>
 #include <sha_256.h>
 #include <img_header.h>
+#include <pubkey.h>
+#include <uECC.h>
 
 #define APP_HEADER_ADDR 0x08020000u
 
@@ -80,7 +82,7 @@ int main(void)
 		refuse();
 	}
 
-	if (hdr->img_len == 0 || hdr->img_len > APP_SLOT_SIZE - IMG_HEADER_SIZE)
+	if (hdr->img_len == IMG_HEADER_SIZE || hdr->img_len > APP_SLOT_SIZE - IMG_HEADER_SIZE)
 	{
 		refuse();
 	}
@@ -95,6 +97,11 @@ int main(void)
 	if (memcmp(computed, hdr->hash, 32) != 0)
 	{
 		refuse();
+	}
+
+	if (uECC_verify(g_pubkey, computed, 32, hdr->sig, uECC_secp256r1()) != 1)
+	{
+	    refuse();
 	}
 
 
