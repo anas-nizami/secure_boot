@@ -34,4 +34,4 @@ jobs:
           arm-none-eabi-gcc -c -std=c11 -Wall -Wextra -Wno-unused-parameter \
             -mcpu=cortex-m4 -mthumb \
             -I./bootloader/third_party/micro-ecc \
-            bootloader/third_party/micro-ecc/uECC.c -o /dev/null
+            bootloader/src/uECC.c -o /dev/null
