@@ -62,7 +62,7 @@ int main(void) {
     struct test_vector vectors[TV_MAX];
     size_t nvectors;
 
-    nvectors = parse_rsp_vectors("tests/SHA256ShortMsg.rsp", vectors, TV_MAX);
+    nvectors = parse_rsp_vectors("tests/SHA_Test/SHA256ShortMsg.rsp", vectors, TV_MAX);
     if(nvectors == 0) {
         printf("No RSP test vectors found or failed to parse the file.\n");
         return 1;
@@ -72,13 +72,13 @@ int main(void) {
     if (nvectors > 0 && test_rsp_vectors(vectors, nvectors))
     {
         printf("\033[1;32m");
-        printf("**ALL RSP TESTS PASSED!**\n");
+        printf("**ALL RSP TESTS PASSED!**\n\n\n");
         printf("\033[0m");
         return 0;
     }else
     {
         printf("\033[1;31m");
-        printf("**ONE OR MORE RSP TESTS FAILED!**\n");
+        printf("**ONE OR MORE RSP TESTS FAILED!**\n\n\n");
         printf("\033[0m");
         return 1;
     }

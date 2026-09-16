@@ -2,7 +2,7 @@
 import hashlib, struct, sys
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives import hashes
