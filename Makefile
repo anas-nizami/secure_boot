@@ -3,14 +3,15 @@
 
 CC := gcc
 PYTHON := python3
-CFLAGS := -Wall -Wextra -Werror -std=c11 -I./tests -I./bootloader/SHA_256
-CFLAGS_ECC := -Wall -Wextra -std=c11 -Wno-unused-parameter \
+CFLAGS_COMMON := -Wall -Wextra -std=c11
+CFLAGS := $(CFLAGS_COMMON) -Werror -I./tests -I./bootloader/SHA_256
+CFLAGS_ECC := $(CFLAGS_COMMON) -Wno-unused-parameter \
               -I./tests -I./bootloader/third_party/micro-ecc -I./bootloader/inc
-CFLAGS_FMT := -Wall -Wextra -Werror -std=c11 -I./bootloader/inc
+CFLAGS_FMT := $(CFLAGS_COMMON) -Werror -I./bootloader/inc
 SAN    := -fsanitize=undefined,address
 LDFLAGS :=
 
-SRC := ./bootloader/SHA_256/sha_256.c
+SHA_SRC := ./bootloader/SHA_256/sha_256.c
 SHA_TEST_SRC:= ./tests/SHA_Test/test_sha256.c ./tests/SHA_Test/parser.c
 MICRO_ECC_SRC := ./bootloader/src/uECC.c
 MICRO_ECC_TEST := ./tests/ECC_Test/test_ecc.c
@@ -20,12 +21,12 @@ OUT := ./tests/SHA_Test/test_sha256.exe
 OUT_ECC := ./tests/ECC_Test/test_ecc.exe
 OUT_FMT := ./tests/Format_Test/dump_format.exe
 
-.PHONY: all clean run run_sha256 run_ecc run_format_sync delete clear test
+.PHONY: all run_sha256 run_ecc run_format_sync delete clear test
 
 all: $(OUT) $(OUT_ECC) $(OUT_FMT)
 
-$(OUT): $(SRC) $(SHA_TEST_SRC)
-	$(CC) $(CFLAGS) $(SAN) -o $(OUT) $(SHA_TEST_SRC) $(SRC) $(LDFLAGS)
+$(OUT): $(SHA_SRC) $(SHA_TEST_SRC)
+	$(CC) $(CFLAGS) $(SAN) -o $(OUT) $(SHA_TEST_SRC) $(SHA_SRC) $(LDFLAGS)
 
 $(OUT_ECC): $(MICRO_ECC_SRC) $(MICRO_ECC_TEST)
 	$(CC) $(CFLAGS_ECC) $(SAN) -o $(OUT_ECC) $(MICRO_ECC_TEST) $(MICRO_ECC_SRC) $(LDFLAGS)
@@ -48,9 +49,7 @@ run_format_sync: $(OUT_FMT)
 test: run_sha256 run_ecc run_format_sync
 
 delete:
-	@rm -f $(OUT)
-	@rm -f $(OUT_ECC)
-	@rm -f $(OUT_FMT)
+	@rm -f $(OUT) $(OUT_ECC) $(OUT_FMT)
 
 clear: delete all
 	@echo "Rebuilt $(OUT), $(OUT_ECC), $(OUT_FMT)"

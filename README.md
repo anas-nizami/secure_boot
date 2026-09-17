@@ -28,7 +28,7 @@ POWER ON / RESET
       │
       ▼
 ╔═════════════════════════════════════════════════╗
-║ YOUR BOOTLOADER  @ 0x08000000  (sectors 0–3)    ║
+║ The BOOTLOADER  @ 0x08000000  (sectors 0–3)     ║
 ╠═════════════════════════════════════════════════╣
 ║                                                 ║
 ║  init clocks, GPIO (LEDs blink)                 ║
@@ -44,7 +44,7 @@ POWER ON / RESET
 ║           │ yes                     │           ║
 ║           ▼                         │           ║
 ║  ┌──────────────────────────┐       │           ║
-║  │ SHA-256 over body        │       │  PHASE 2  ║
+║  │ SHA-256 over body        │       │  PHASE 1  ║
 ║  │ 0x08020200 .. +img_len   │       │           ║
 ║  └──────────────────────────┘       │           ║
 ║           │                         │           ║
@@ -53,15 +53,15 @@ POWER ON / RESET
 ║           │ yes                     │           ║
 ║           ▼                         │           ║
 ║  ┌──────────────────────────┐       │           ║
-║  │ ECDSA-P256 verify        │       │  PHASE 3  ║
-║  │ sig over hash, pubkey    │       │           ║
+║  │ ECDSA-P256 verify        │       │  PHASE 2  ║
+║  │ sign over hash, pubkey   │       │           ║
 ║  └──────────────────────────┘       │           ║
 ║           │                         │           ║
 ║           ▼                         │           ║
 ║     signature valid ? ─────── no ───┤           ║
 ║           │ yes                     │           ║
 ║           ▼                         │           ║
-║     version >= counter ? ──── no ───┤  PHASE 4  ║
+║     version >= counter ? ──── no ───┤  PHASE 3  ║
 ║           │ yes                     │           ║
 ║           ▼                         ▼           ║
 ║      JUMP TO APP                REFUSE          ║
@@ -119,10 +119,9 @@ docs/           threat model, design notes, engineering log
 - [x] Phase 0 — threat model, repo, concepts
 - [x] Phase 1 — bootloader jumps to application
 - [x] Phase 2 — SHA-256 integrity check, tampered image refused
-- [ ] Phase 3 — ECDSA signature verification, wrong-key image refused
-- [ ] Phase 4 — flash write protection, RDP, anti-rollback counter
-- [ ] Phase 5 — signed firmware update over UART with A/B slots
-- [ ] Phase 6 — demo video, writeup
+- [ ] Phase 3 — flash write protection, RDP, anti-rollback counter
+- [ ] Phase 4 — signed firmware update over UART with A/B slots
+- [ ] Phase 5 — demo video, writeup
 
 ## Building
 
