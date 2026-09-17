@@ -6,7 +6,7 @@ and refuses to boot tampered or unsigned images.
 
 > **Status:** in development. See [Roadmap](#roadmap).
 
-![CI](https://github.com/anas-nizami/secure_boot/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/anas-nizami/secure_boot/actions/workflows/ci.yml/badge.svg)](https://github.com/anas-nizami/secure_boot/actions/workflows/ci.yml)
 
 ## Why
 
@@ -22,13 +22,14 @@ POWER ON / RESET
       │
       ▼
 ┌─────────────────────────────────────┐
-│ ST mask ROM  (not MINE, unchanged) │
+│ ST mask ROM                         │
 │ BOOT0 low → jump to 0x08000000      │
 └─────────────────────────────────────┘
       │
       ▼
 ╔═════════════════════════════════════════════════╗
 ║ The BOOTLOADER  @ 0x08000000  (sectors 0–3)     ║
+║ 9,648 B flash (14.7% of the 64 KB reservation)  ║
 ╠═════════════════════════════════════════════════╣
 ║                                                 ║
 ║  init clocks, GPIO (LEDs blink)                 ║
@@ -44,7 +45,7 @@ POWER ON / RESET
 ║           │ yes                     │           ║
 ║           ▼                         │           ║
 ║  ┌──────────────────────────┐       │           ║
-║  │ SHA-256 over body        │       │  PHASE 1  ║
+║  │ SHA-256 over body        │       │  PHASE 2  ║
 ║  │ 0x08020200 .. +img_len   │       │           ║
 ║  └──────────────────────────┘       │           ║
 ║           │                         │           ║
@@ -53,7 +54,7 @@ POWER ON / RESET
 ║           │ yes                     │           ║
 ║           ▼                         │           ║
 ║  ┌──────────────────────────┐       │           ║
-║  │ ECDSA-P256 verify        │       │  PHASE 2  ║
+║  │ ECDSA-P256 verify        │       │  PHASE 3  ║
 ║  │ sign over hash, pubkey   │       │           ║
 ║  └──────────────────────────┘       │           ║
 ║           │                         │           ║
@@ -61,7 +62,7 @@ POWER ON / RESET
 ║     signature valid ? ─────── no ───┤           ║
 ║           │ yes                     │           ║
 ║           ▼                         │           ║
-║     version >= counter ? ──── no ───┤  PHASE 3  ║
+║     version >= counter ? ──── no ───┤  PHASE 4  ║
 ║           │ yes                     │           ║
 ║           ▼                         ▼           ║
 ║      JUMP TO APP                REFUSE          ║
@@ -107,8 +108,8 @@ bootloader itself.
 ## Repository layout
 
 ```
-bootloader/     bootloader sources, SHA_256 implementation and linker script
-app/            demo application, linked at 0x08020000
+bootloader/     bootloader sources, SHA_256 implementation and linker script and third party uECC verified implementation
+app/            demo application, linked at 0x08020200
 tools/          host-side image signing (Correct and corrupted) and Python script for signing
 tests/          SHA-256 test vectors, host-side verification harness
 docs/           threat model, design notes, engineering log
@@ -119,15 +120,41 @@ docs/           threat model, design notes, engineering log
 - [x] Phase 0 — threat model, repo, concepts
 - [x] Phase 1 — bootloader jumps to application
 - [x] Phase 2 — SHA-256 integrity check, tampered image refused
-- [ ] Phase 3 — flash write protection, RDP, anti-rollback counter
-- [ ] Phase 4 — signed firmware update over UART with A/B slots
-- [ ] Phase 5 — demo video, writeup
+- [x] Phase 3 — ECDSA-P256 signature verification, wrong-key image refused
+- [ ] Phase 4 — flash write protection (WRP), RDP Level 1, anti-rollback counter
+- [ ] Phase 5 — signed firmware update over UART with A/B slots
+- [ ] Phase 6 — ESP32 UART bridge for wireless transport
+- [ ] Phase 7 — AWS IoT Jobs for fleet update orchestration
+- [ ] Phase 8 — demo video, writeup
 
 ## Building
 
-*(to be filled in)*
+1. Build the bootloader and app in STM32CubeIDE (two separate projects).
+2. Generate the public key header:
+   `python3 tools/gen_pubkey.py`
+3. Sign the application image:
+   `python3 tools/sign_image.py app/Debug/Secure_Boot_App.bin build/app_signed.bin 1`
+4. Flash with STM32CubeProgrammer:
+   - bootloader `.bin` → `0x08000000`
+   - `app_signed.bin` → `0x08020000`
+   - Leave "Full chip erase" unchecked between the two writes or else it will clear everything
+
+micro-ecc curve selection is configured via compiler defines — see
+[`uECC Config ReadMe`](bootloader/third_party/README.md).
 
 ## Security note
 
-The signing private key is never committed to this repository. `keys/*.pem` is
-gitignored. Public keys and test keys only.
+The signing private key is never committed to this repository.
+Private keys gitignored, public key committed.
+
+## Planned: wireless update path
+
+The F407 has no radio and insufficient flash for a TLS stack, so network
+connectivity is handled by a separate ESP32 acting as a UART bridge: it
+terminates TLS and MQTT, then forwards the image to the bootloader over the
+same framed protocol used in Phase 5.
+
+The bootloader's view is unchanged. This is deliberate — **TLS authenticates the
+channel; ECDSA authenticates the image**. They are separate controls and both
+are required. A compromised cloud account could push a TLS-valid but unsigned
+image, and the bootloader would still refuse it.

@@ -12,6 +12,7 @@ build/
 *.hex
 *.map
 *.lst
+flash_image/
 
 # IDE
 .vscode/
