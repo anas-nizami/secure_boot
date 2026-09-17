@@ -31,11 +31,11 @@ def write_file(file_path, data):
         print(f"Error: Unable to write file - {file_path}")
         sys.exit(1)
 
-def build(app_bin, out_bin, version):
+def build(app_bin, out_bin, version, key_file):
     body = read_file(app_bin)  # Read the application binary file in binary mode, without the b in rb, it would read it in text mode, which could cause issues with binary data.
 
     REPO_ROOT = Path(__file__).resolve().parent.parent
-    private_key_file = read_file(REPO_ROOT / 'keys' / 'private-key.pem')  # Read the private key file in binary mode
+    private_key_file = read_file(REPO_ROOT / 'keys' / key_file)  # Read the private key file in binary mode
     private_key = load_pem_private_key(private_key_file, password=None, backend=default_backend())  # Load the private key from the PEM file
 
     # The digest is a fixed-size output that uniquely represents the input data, ensuring integrity and authenticity.
@@ -84,6 +84,7 @@ def build(app_bin, out_bin, version):
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        print("usage: sign_image.py <app.bin> <out.bin> <version>")
+        print("usage: sign_image.py <app.bin> <version> <key.pem>")
         sys.exit(1)
-    build(sys.argv[1], sys.argv[2], int(sys.argv[3]))
+    out_bin = sys.argv[1].replace('.bin', f'_{sys.argv[3]}_signed.bin')
+    build(sys.argv[1], out_bin, int(sys.argv[2]), sys.argv[3])
