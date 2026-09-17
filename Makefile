@@ -13,7 +13,7 @@ LDFLAGS :=
 
 SHA_SRC := ./bootloader/SHA_256/sha_256.c
 SHA_TEST_SRC:= ./tests/SHA_Test/test_sha256.c ./tests/SHA_Test/parser.c
-MICRO_ECC_SRC := ./bootloader/src/uECC.c
+MICRO_ECC_SRC := ./bootloader/third_party/micro-ecc/uECC.c
 MICRO_ECC_TEST := ./tests/ECC_Test/test_ecc.c
 DUMP_FORMAT_SRC := ./tests/Format_Test/dump_format.c
 
