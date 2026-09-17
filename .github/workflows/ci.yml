@@ -33,7 +33,7 @@ jobs:
           arm-none-eabi-gcc -c -std=c11 -Wall -Wextra -Wno-unused-parameter \
             -mcpu=cortex-m4 -mthumb \
             -I./bootloader/third_party/micro-ecc \
-            bootloader/src/uECC.c -o /dev/null
+            bootloader/third_party/micro-ecc/uECC.c -o /dev/null
 
   format_sync_test:
     runs-on: ubuntu-latest
