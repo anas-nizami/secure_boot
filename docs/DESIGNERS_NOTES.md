@@ -14,8 +14,8 @@ The linker script limits the bootloader to sectors 0–3 rather than the full
 overwriting the metadata sector. The cap is enforced now, before SHA-256 and
 micro-ecc are linked in, so any future overrun is caught at build time.
 
-If you are wondering why 64? I picked 64 becasue its a round number and the address ends at 0x08010000 and It will amke the arithmetic easire.
-We could do 4KB (Sector 0-2) but we have 1 MB of total space so we are not going to run out of space anyway.  
+If you are wondering why 64? I picked 64 becasue its a round number and the address ends at 0x08010000 and It will make the arithmetic easire.
+We could do 32KB (Sector 0-2) but we have 1 MB of total space so we are not going to run out of space anyway.  
 
 ### Bootloader heap set to zero
 

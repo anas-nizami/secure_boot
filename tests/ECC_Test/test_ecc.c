@@ -66,11 +66,11 @@ int TEST_ECC_TAMPERED_KEY()
     if (r) {
         printf("\033[1;31m");
         printf("**SIGNATURE VERIFICATION SHOULD HAVE FAILED BUT DID NOT!**\n");
-        printf("\033[1;31m");
+        printf("\033[0m");
     } else {
         printf("\033[1;32m");
         printf("**SIGNATURE VERIFICATION FAILED AS EXPECTED!**\n");
-        printf("\033[1;32m");
+        printf("\033[0m");
     }
 
     return !r;
@@ -82,6 +82,7 @@ int main()
     result &= TEST_ECC();
     result &= TEST_ECC_TAMPERED_DIGEST();
     result &= TEST_ECC_TAMPERED_KEY();
+    printf("\n\n");
     
     return result ? 0 : 1;
 }

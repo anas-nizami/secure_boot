@@ -9,9 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
       - name: Build and test
         run: make run_sha256
     
@@ -29,7 +26,7 @@ jobs:
 
       - name: Build and test ECC
         run: make run_ecc
-      
+
       - name: Cross-compile for target
         run: |
           sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
@@ -37,3 +34,14 @@ jobs:
             -mcpu=cortex-m4 -mthumb \
             -I./bootloader/third_party/micro-ecc \
             bootloader/src/uECC.c -o /dev/null
+
+  format_sync_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install signing tool dependencies
+        run: pip install cryptography
+
+      - name: Check sign_image.py header layout matches img_header.h
+        run: make run_format_sync

@@ -82,7 +82,7 @@ int main(void)
 		refuse();
 	}
 
-	if (hdr->img_len == IMG_HEADER_SIZE || hdr->img_len > APP_SLOT_SIZE - IMG_HEADER_SIZE)
+	if (hdr->img_len == 0 || hdr->img_len > APP_SLOT_SIZE - IMG_HEADER_SIZE)
 	{
 		refuse();
 	}
