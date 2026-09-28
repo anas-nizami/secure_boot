@@ -140,6 +140,57 @@ might proceed.
 
 ---
 
+## Rollback protection
+
+A validly signed but older image is refused. Signatures prove who built an
+image, not whether it is still safe to run — the counter adds freshness.
+
+**Storage.** Flash sector 4 (`0x08010000`, 64 KB) holds a unary tally: the
+stored version is the number of leading `0x00` bytes. Flash programming can
+only clear bits, so incrementing means zeroing one more byte — no erase, no
+read-modify-write. Capacity: 65,536 increments. App updates never touch
+sector 4, so the counter survives them.
+
+**Order of checks.** The version is compared only after the signature
+verifies. Before that it is untrusted flash.
+
+**Header fields are signed.** The digest covers `magic, version, img_len,
+reserved` as well as the body. An earlier version signed the body only,
+which let the version be edited to jump the counter without breaking the
+signature.
+
+**Known limitation.** The counter is advanced before handing control to the
+application, since the bootloader never runs again afterwards. A new image
+that fails at runtime therefore locks out the older working one. The planned
+fix is a trial boot: the application confirms it is healthy before the
+counter commits, with the MPU preventing the application from writing
+sector 4 directly.
+
+---
+
+## Flash Write Protection (WRP) and Readout Protection (RDP)
+
+**Write Protection ->**
+In the STM32CubeProgrammer after connecting the board, we move to the OB(Option Byte) section we can enable the Write Protection.
+Every section has its onw write Protection. Our bootloader sits in section 0-3 so we enable the Write protection, which will prevent ann modofocation to the bootloader.
+This prevents clearing or modification of the sector.
+
+![Setting the WRP](Image/Write_Protection.jpg)
+
+*Figure 1: Selecting the WRP*
+
+![Error](Image/Modification_error.jpg)
+
+*Figure 2: Error on re-flashing the sector 0-3*
+
+**Read Protection ->**
+To make sure no one can read the data stored we can enable to readout protection.
+Once enabled we cannot uise a debugger to read the contents of the memory. This also disables the use of debugger completely.
+
+To use the debugger again, we would need to remove the protection but we will loose all the data in process.
+
+---
+
 ## Testing
 
 `tests/test_sha256.c` runs the 65 NIST CAVS SHA-256 ShortMsg vectors

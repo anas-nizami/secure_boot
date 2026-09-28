@@ -44,10 +44,10 @@ POWER ON / RESET
 ║     img_len sane ? ────────── no ───┤           ║
 ║           │ yes                     │           ║
 ║           ▼                         │           ║
-║  ┌──────────────────────────┐       │           ║
-║  │ SHA-256 over body        │       │  PHASE 2  ║
-║  │ 0x08020200 .. +img_len   │       │           ║
-║  └──────────────────────────┘       │           ║
+║  ┌───────────────────────────┐      |           ║  
+║  │ SHA-256 over header[0:16] │      │   PHASE 2 ║
+║  │ + body (0x08020200..)     │      │           ║
+║  └───────────────────────────┘      |           ║
 ║           │                         │           ║
 ║           ▼                         │           ║
 ║     hash == header.hash ? ─── no ───┤           ║
@@ -121,7 +121,8 @@ docs/           threat model, design notes, engineering log
 - [x] Phase 1 — bootloader jumps to application
 - [x] Phase 2 — SHA-256 integrity check, tampered image refused
 - [x] Phase 3 — ECDSA-P256 signature verification, wrong-key image refused
-- [ ] Phase 4 — flash write protection (WRP), RDP Level 1, anti-rollback counter
+- [x] Phase 4a — anti-rollback counter, header fields covered by signature
+- [x] Phase 4b — flash write protection (WRP), RDP Level 1
 - [ ] Phase 5 — signed firmware update over UART with A/B slots
 - [ ] Phase 6 — ESP32 UART bridge for wireless transport
 - [ ] Phase 7 — AWS IoT Jobs for fleet update orchestration
@@ -158,3 +159,5 @@ The bootloader's view is unchanged. This is deliberate — **TLS authenticates t
 channel; ECDSA authenticates the image**. They are separate controls and both
 are required. A compromised cloud account could push a TLS-valid but unsigned
 image, and the bootloader would still refuse it.
+
+Boot log: bootloader appends a record (stage, error, version, counter) to a dedicated flash sector on each boot decision; the application reads it on successful boot and reports it via AWS IoT.

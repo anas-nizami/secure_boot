@@ -33,46 +33,117 @@ branches to main().
 
 ## 5. Bootloader main()
 
-Initialises GPIO bus and clock. Runs the LED indication loop. This routine must
-RETURN — if it loops forever the handoff below is never reached.
+Initialises GPIO and clocks, then blinks the LEDs once as a proof-of-life
+indicator — it confirms the bootloader started and reached main() before any
+verification runs. The routine must RETURN; if it loops forever the chain
+below is never reached.
 
-## 6. Mask interrupts
+Verification (steps 6-10) follows.
 
-cpsid i — no interrupt may fire while the vector table and stack pointer
-are in an inconsistent state.
+## 6. Read and validate the image header
 
-## 7. De-initialise peripherals
+The header occupies the 512 bytes at 0x08020000, immediately before the
+application body.
+It is passive data — no code, never executed — but it is
+attacker-writable flash and is treated as untrusted input throughout.
 
-SysTick CTRL/LOAD/VAL cleared. A timer interrupt during handoff would
-vector through a partially updated table.
+Checks run cheapest first:
 
-## 8. Relocate the vector table
+**Magic.** hdr->magic must equal 0x4E495A41 (AZIN). Erased flash reads 0xFFFFFFFF,
+so this single comparison separates "no image present" from "image present".
+Without it, img_len would read as 0xFFFFFFFF and the hash would run off the
+end of flash.
 
-SCB->VTOR = 0x08020200. Base must be 512-byte aligned: the F407 has 98
-vectors (392 bytes), rounded up to the next power of two, and VTOR bits
-[8:0] are hardwired to zero.
+**Length bounds.** img_len must be non-zero and fit within
+APP_SLOT_SIZE - IMG_HEADER_SIZE. This is a security check, not a sanity
+check: img_len is attacker-controlled.
 
-## 9. Adopt the application's stack pointer
+Neither defends against a capable attacker, who would write a correct magic
+and a plausible length. They defend against blank flash, partially written
+flash, and a raw image flashed without a header.
 
-msp = *(uint32_t *)0x08020200   (word 0 of the app's vector table)
-msr msp, msp
-The bootloader's stack is abandoned here. The two images share no RAM.
+## 7. Compute the image digest
 
-## 10. Memory barriers
+SHA-256 over two regions, in order:
 
-dsb — ensure the VTOR write has landed
-isb — flush the pipeline so prefetched instructions are discarded
-Without these the branch can execute before VTOR takes effect. The
-failure is timing-dependent and does not reproduce reliably.
+  1. the 16-byte header prefix — magic, version, img_len, reserved
+  2. the application body — img_len bytes from 0x08020200
 
-## 11. Branch to the application's Reset_Handler
+The digest covers the header fields as well as the body.
+An earlier version hashed the body alone, which left version and img_len unauthenticated: the
+version could be edited with a hex editor without breaking the signature,
+defeating the rollback counter entirely.
 
-entry = *(uint32_t *)0x08020204   (word 1 of the app's vector table)
+The hash excludes the header's own hash, sig and pad fields — the first
+cannot cover itself, and the second is derived from it.
+
+Flash is memory-mapped, so both regions are read through plain pointers.
+
+## 8. Integrity check
+
+memcmp against hdr->hash. A mismatch means the image changed after signing.
+
+memcmp rather than a constant-time comparison: timing leakage matters when
+the compared value is a secret being guessed byte by byte. The stored digest
+is not secret — it is derived from an image the attacker already has — and
+preimage resistance means partial-match information cannot be used to
+construct a matching image.
+
+This step is a cheap early-out, not the load-bearing check. It fails in
+microseconds where signature verification takes hundreds of milliseconds.
+
+## 9. Signature verification
+
+uECC_verify(g_pubkey, computed, 32, hdr->sig, uECC_secp256r1())
+
+Verified against the locally computed digest, never against hdr->hash.
+Verifying against the stored value would make this check depend on step 8
+having run correctly; against the computed value it is valid on its own terms.
+
+The public key is compiled into bootloader flash, generated from
+keys/public-key.pem at build time. Verification requires no random number
+generator — it is deterministic over public values. The device only verifies
+and never signs, so no entropy source is needed on target.
+
+This is the step that establishes authenticity. Step 8 establishes only that
+the image is intact; an attacker who modifies the body can recompute its
+digest, but cannot produce a valid signature over it.
+
+## 10. Rollback check
+
+stored = number of leading 0x00 bytes in sector 4 (0x08010000)
+
+  version <  stored   refuse — downgrade attempt
+  version == stored   boot, write nothing
+  version >  stored   write (version - stored) bytes of 0x00, then boot
+
+Reached only after signature verification, because version is untrusted
+until then.
+
+Signatures prove authorship, not freshness. Without this check a genuinely
+signed but known-vulnerable release could be reflashed and would pass every
+preceding check.
+
+The counter is advanced before the handoff, since the bootloader does not run
+again afterwards. Known limitation: an image that fails at runtime therefore
+locks out the previous working version. The intended fix is a trial boot
+where the application confirms health before the counter commits, with the
+MPU preventing the application from writing sector 4 directly.
+
+## 11. Refuse path
+
+Any failed check calls refuse(), which drives the red LED and halts. There is
+no path from a failed check to the handoff — the function does not return.
+This is the property the whole design rests on.
+
+## 12. Branch to the application's Reset_Handler
+
+entry = *(uint32_t *)0x08020204  (word 1 of the app's vector table)
 Note: this is the Reset_Handler, NOT main(). The address is odd — bit 0
 set indicates Thumb state. Branching to an even address faults, as the
 M4 has no ARM mode.
 
-## 12. Application startup runs
+## 13. Application startup runs
 
 The app performs its own .data copy and .bss zero, then branches to its
 main(). Steps 4-5 repeat for the second image. The application is a
