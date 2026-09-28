@@ -34,15 +34,26 @@ def write_file(file_name, data):
 
 def build(version, key_file):
     REPO_ROOT = Path(__file__).resolve().parent.parent
-
-    body = read_file(REPO_ROOT / 'bootloader' / 'Debug' / 'Secure_Boot.bin')  # Read the application binary file in binary mode, without the b in rb, it would read it in text mode, which could cause issues with binary data.
+    
+    body = read_file(REPO_ROOT / 'app' / 'Debug' / 'Secure_Boot_App.bin')  # Read the application binary file in binary mode, without the b in rb, it would read it in text mode, which could cause issues with binary data.
     out_bin = REPO_ROOT / 'flash_image' / key_file.replace('.pem', f'_{version}.bin')  # Replace the .pem extension with .bin for the output file name
 
     private_key_file = read_file(REPO_ROOT / 'keys' / key_file)  # Read the private key file in binary mode
     private_key = load_pem_private_key(private_key_file, password=None, backend=default_backend())  # Load the private key from the PEM file
 
+    """
+    Symbols     Meaning
+        <       Little-endian - For the Cortex-M
+      IIII      Unsigned integer - Each I is for unit32_t (4 bytes)
+                    magic
+                    version
+                    img_len
+                    reserved
+    """
+    prefix = struct.pack('<IIII', MAGIC, version, len(body), 0)
+    signed_data = prefix + body
     # The digest is a fixed-size output that uniquely represents the input data, ensuring integrity and authenticity.
-    digest = hashlib.sha256(body).digest()  # Hash the whole file in one call. .digest() gives 32 raw bytes. This will be used to sign the image and verify below.
+    digest = hashlib.sha256(signed_data).digest()  # Hash the signed data. .digest() gives 32 raw bytes. This will be used to sign the image and verify below.
 
     """
     Sign the digest with the private key. 
@@ -58,20 +69,14 @@ def build(version, key_file):
 
     """
     We need to generate a header for the image. The header is 512 bytes long and contains the following fields:
-    < I I I I 32s 64s
+    '< 32s 64s'
     Symbols     Meaning
     <           Little-endian - For the Cortex-M
-    I           Unsigned integer - unit32_t (4 bytes)
-                    magic
-                    version
-                    img_len
-                    reserved
     32s         32 bytes string - SHA256 digest
     64s         64 bytes string - The signed digest (r and s values concatenated)    
     """
-    header = struct.pack('<IIII32s64s',
-                         MAGIC, version, len(body), 0,
-                         digest, signature)
+    header = struct.pack('<32s64s', digest, signature)
+    header = prefix + header  # Concatenate the prefix and the header
 
     try:
         private_key.public_key().verify(der, digest, ec.ECDSA(utils.Prehashed(hashes.SHA256())))

@@ -23,6 +23,7 @@
 #include <img_header.h>
 #include <pubkey.h>
 #include <uECC.h>
+#include <flash.h>
 
 #define APP_HEADER_ADDR 0x08020000u
 
@@ -91,6 +92,7 @@ int main(void)
 	uint8_t computed[32];
 
 	sha256_init(&ctx);
+	sha256_update(&ctx, (const uint8_t *)hdr, 16);     /* magic, version, img_len, reserved */
 	sha256_update(&ctx, body, hdr->img_len);
 	sha256_final(&ctx, computed);
 
@@ -104,6 +106,16 @@ int main(void)
 	    refuse();
 	}
 
+	uint32_t rollback_count = rollback_get_count();
+	if (hdr->version < rollback_count)
+	{
+		refuse();
+	}
+	int increment_result = rollback_increment(hdr->version - rollback_count);
+	if (increment_result != FLASH_SUCCESS)
+	{
+		refuse();
+	}
 
 	jump_to_app(APP_BODY_ADDR);
 
