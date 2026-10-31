@@ -3,10 +3,10 @@
  * @file parser.c
  * @brief RSP file parser for NIST test vectors.
  *
- * Test-harness support code, 
- * 
- * ***** AI-generated and reviewed. Not part of the bootloader *********; 
- * 
+ * Test-harness support code,
+ *
+ * ***** AI-generated and reviewed. Not part of the bootloader *********;
+ *
  * no parser code is compiled into the target image.
  */
 #include <ctype.h>
@@ -33,7 +33,8 @@ static int is_hex_string(const char *s)
 {
 	if (*s == '\0')
 		return 1;
-	for (; *s; ++s) {
+	for (; *s; ++s)
+	{
 		if (!isxdigit((unsigned char)*s))
 			return 0;
 	}
@@ -49,12 +50,14 @@ size_t parse_rsp_vectors(const char *path, struct test_vector *vectors, size_t m
 	struct test_vector tv = {0};
 	size_t nvectors = 0;
 
-	if (!file) {
+	if (!file)
+	{
 		perror(path);
 		return 0;
 	}
 
-	while (fgets(line, sizeof line, file)) {
+	while (fgets(line, sizeof line, file))
+	{
 		char *equals;
 		trim(line);
 		if (line[0] == '\0' || line[0] == '#' || line[0] == '[')
@@ -67,27 +70,38 @@ size_t parse_rsp_vectors(const char *path, struct test_vector *vectors, size_t m
 		trim(line);
 		trim(equals);
 
-		if (strcmp(line, "Len") == 0) {
+		if (strcmp(line, "Len") == 0)
+		{
 			length = atoi(equals);
 			tv.length = length;
 			tv.msg[0] = tv.digest[0] = '\0';
-		} else if (strcmp(line, "Msg") == 0) {
-			if (strlen(equals) >= sizeof tv.msg || !is_hex_string(equals)) {
+		}
+		else if (strcmp(line, "Msg") == 0)
+		{
+			if (strlen(equals) >= sizeof tv.msg || !is_hex_string(equals))
+			{
 				fprintf(stderr, "Invalid Msg in block %lu\n", block + 1);
 				continue;
 			}
 			strcpy(tv.msg, equals);
-		} else if (strcmp(line, "MD") == 0) {
-			if (strlen(equals) >= sizeof tv.digest || !is_hex_string(equals)) {
+		}
+		else if (strcmp(line, "MD") == 0)
+		{
+			if (strlen(equals) >= sizeof tv.digest || !is_hex_string(equals))
+			{
 				fprintf(stderr, "Invalid MD in block %lu\n", block + 1);
 				continue;
 			}
 			strcpy(tv.digest, equals);
 
-			if (length >= 0) {
-				if (nvectors < max_vectors) {
+			if (length >= 0)
+			{
+				if (nvectors < max_vectors)
+				{
 					vectors[nvectors++] = tv;
-				} else {
+				}
+				else
+				{
 					fprintf(stderr, "Too many vectors, dropping block %lu\n", block + 1);
 				}
 				++block;

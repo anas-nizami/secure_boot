@@ -4,9 +4,9 @@
  * @brief Implementation of the SHA-256 hashing algorithm.
  * @version 0.1
  * @date 2026-08-20
- * 
+ *
  * @copyright Copyright (c) 2026
- * 
+ *
  * The functions and values used here are based on the SHA-256 algorithm as defined in the FIPS PUB 180-4 standard.
  * Link to the publication (free of charge): https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
  */
@@ -14,24 +14,25 @@
 #include "sha_256.h"
 #include <string.h>
 
-#define ROTR(x,n) (((x) >> (n)) | ((x) << (32 - (n))))
+#define ROTR(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
 
 /* uppercase SIGMA — Three rotation, no shifting */
-#define SIG0(x)  (ROTR(x,2)  ^ ROTR(x,13) ^ ROTR(x,22))         //Doc : 4.4
-#define SIG1(x)  (ROTR(x,6)  ^ ROTR(x,11) ^ ROTR(x,25))         //Doc : 4.5
+#define SIG0(x) (ROTR(x, 2) ^ ROTR(x, 13) ^ ROTR(x, 22)) // Doc : 4.4
+#define SIG1(x) (ROTR(x, 6) ^ ROTR(x, 11) ^ ROTR(x, 25)) // Doc : 4.5
 
 /* lowercase sigma — Two rotation, one shifting */
-#define sig0(x)  (ROTR(x,7)  ^ ROTR(x,18) ^ ((x) >> 3))         //Doc : 4.6
-#define sig1(x)  (ROTR(x,17) ^ ROTR(x,19) ^ ((x) >> 10))        //Doc : 4.7
+#define sig0(x) (ROTR(x, 7) ^ ROTR(x, 18) ^ ((x) >> 3))   // Doc : 4.6
+#define sig1(x) (ROTR(x, 17) ^ ROTR(x, 19) ^ ((x) >> 10)) // Doc : 4.7
 
 /* the other two */
-#define CH(x,y,z)   (((x) & (y)) ^ (~(x) & (z)))                //Doc : 4.2
-#define MAJ(x,y,z)  (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))   //Doc : 4.3
+#define CH(x, y, z) (((x) & (y)) ^ (~(x) & (z)))               // Doc : 4.2
+#define MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z))) // Doc : 4.3
 
-#define SHA256_MAX_PADDING 72   /* worst case: buflen == 56 -> (120-56) + 8 */
+#define SHA256_MAX_PADDING 72 /* worst case: buflen == 56 -> (120-56) + 8 */
 
-void sha256_init(sha256_ctx *ctx) {
-    
+void sha256_init(sha256_ctx *ctx)
+{
+
     ctx->state[0] = 0x6a09e667;
     ctx->state[1] = 0xbb67ae85;
     ctx->state[2] = 0x3c6ef372;
@@ -49,7 +50,7 @@ void sha256_init(sha256_ctx *ctx) {
 
 /**
  * @brief Const values from the doc. Look for SHA-256 Constants
- * 
+ *
  */
 static const uint32_t k[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
@@ -67,8 +68,7 @@ static const uint32_t k[64] = {
     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
     0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-    };
+    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
 static void transform(sha256_ctx *ctx, const uint8_t block[64])
 {
@@ -77,13 +77,12 @@ static void transform(sha256_ctx *ctx, const uint8_t block[64])
     uint32_t t1, t2;
 
     // Prepare the message schedule
-    for (int i = 0; i < 16; i++) {
-        w[i] = ((uint32_t)block[i * 4]     << 24)
-            |  ((uint32_t)block[i * 4 + 1] << 16)
-            |  ((uint32_t)block[i * 4 + 2] <<  8)
-            |  (uint32_t)block[i * 4 + 3];
+    for (int i = 0; i < 16; i++)
+    {
+        w[i] = ((uint32_t)block[i * 4] << 24) | ((uint32_t)block[i * 4 + 1] << 16) | ((uint32_t)block[i * 4 + 2] << 8) | (uint32_t)block[i * 4 + 3];
     }
-    for (int i = 16; i < 64; i++) {
+    for (int i = 16; i < 64; i++)
+    {
         w[i] = sig1(w[i - 2]) + w[i - 7] + sig0(w[i - 15]) + w[i - 16];
     }
 
@@ -98,7 +97,8 @@ static void transform(sha256_ctx *ctx, const uint8_t block[64])
     h = ctx->state[7];
 
     // Main loop
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0; i < 64; i++)
+    {
         t1 = h + SIG1(e) + CH(e, f, g) + k[i] + w[i];
         t2 = SIG0(a) + MAJ(a, b, c);
         h = g;
@@ -122,12 +122,13 @@ static void transform(sha256_ctx *ctx, const uint8_t block[64])
     ctx->state[7] += h;
 }
 
-void sha256_update(sha256_ctx *ctx, const uint8_t *data, size_t len) {
+void sha256_update(sha256_ctx *ctx, const uint8_t *data, size_t len)
+{
 
-    for (size_t i = 0; i < len; i++) 
+    for (size_t i = 0; i < len; i++)
     {
-        ctx->buffer[ctx->buflen++] = data[i];      
-        if(ctx->buflen == 64) 
+        ctx->buffer[ctx->buflen++] = data[i];
+        if (ctx->buflen == 64)
         {
             transform(ctx, ctx->buffer);
             ctx->buflen = 0;
@@ -136,21 +137,24 @@ void sha256_update(sha256_ctx *ctx, const uint8_t *data, size_t len) {
     ctx->bitlen += len * 8; // Update the total message length in bits
 }
 
-void sha256_final(sha256_ctx *ctx, uint8_t digest[32]) {
+void sha256_final(sha256_ctx *ctx, uint8_t digest[32])
+{
     size_t padding_length = ctx->buflen < 56 ? 56 - ctx->buflen : 120 - ctx->buflen;
-    uint8_t padding[ SHA256_MAX_PADDING ];
+    uint8_t padding[SHA256_MAX_PADDING];
 
     memset(padding, 0, sizeof(padding));
     padding[0] = 0x80;
 
     uint64_t bitlen = ctx->bitlen;
-    for (size_t i = 0; i < 8; i++) {
+    for (size_t i = 0; i < 8; i++)
+    {
         padding[padding_length + i] = (uint8_t)(bitlen >> (56 - i * 8));
     }
 
     sha256_update(ctx, padding, padding_length + 8);
 
-    for (size_t i = 0; i < 8; i++) {
+    for (size_t i = 0; i < 8; i++)
+    {
         digest[i * 4] = (uint8_t)(ctx->state[i] >> 24);
         digest[i * 4 + 1] = (uint8_t)(ctx->state[i] >> 16);
         digest[i * 4 + 2] = (uint8_t)(ctx->state[i] >> 8);

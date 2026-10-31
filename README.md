@@ -44,7 +44,7 @@ POWER ON / RESET
 ║     img_len sane ? ────────── no ───┤           ║
 ║           │ yes                     │           ║
 ║           ▼                         │           ║
-║  ┌───────────────────────────┐      |           ║  
+║  ┌───────────────────────────┐      |           ║
 ║  │ SHA-256 over header[0:16] │      │   PHASE 2 ║
 ║  │ + body (0x08020200..)     │      │           ║
 ║  └───────────────────────────┘      |           ║
@@ -78,12 +78,12 @@ POWER ON / RESET
 
 ### Flash map (STM32F407VG, 1 MB)
 
-| Sector | Address | Size | Use |
-|---|---|---|---|
-| 0-3 | 0x08000000 | 16 KB each | Bootloader |
-| 4 | 0x08010000 | 64 KB | Metadata / rollback counter |
-| 5-7 | 0x08020000 | 128 KB each | App slot A |
-| 8-10 | 0x08080000 | 128 KB each | App slot B (update staging) |
+| Sector | Address    | Size        | Use                         |
+| ------ | ---------- | ----------- | --------------------------- |
+| 0-3    | 0x08000000 | 16 KB each  | Bootloader                  |
+| 4      | 0x08010000 | 64 KB       | Metadata / rollback counter |
+| 5-7    | 0x08020000 | 128 KB each | App slot A                  |
+| 8-10   | 0x08080000 | 128 KB each | App slot B (update staging) |
 
 Sector sizes on this part are non-uniform, and erase granularity is one sector — this
 drives the partitioning.
@@ -94,16 +94,16 @@ See [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md). Read it before the code: it 
 what this design defends against and, more importantly, what it does not.
 
 **Key limitation:** the F407 has no immutable ROM root of trust and no TrustZone. The
-bootloader is the trust anchor by *assumption*, protected by flash write protection and
+bootloader is the trust anchor by _assumption_, protected by flash write protection and
 readout protection rather than by hardware. On an STM32H5/U5, ROM would verify the
 bootloader itself.
 
 ## Cryptography
 
-| Function | Implementation | Rationale |
-|---|---|---|
-| SHA-256 | Written from specification, validated against NIST test vectors | Implemented to understand it; hash functions are straightforward to verify exhaustively |
-| ECDSA-P256 | [micro-ecc](https://github.com/kmackay/micro-ecc) | Signature verification has subtle side-channel and input-validation failure modes; a reviewed implementation is the correct choice |
+| Function   | Implementation                                                  | Rationale                                                                                                                          |
+| ---------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| SHA-256    | Written from specification, validated against NIST test vectors | Implemented to understand it; hash functions are straightforward to verify exhaustively                                            |
+| ECDSA-P256 | [micro-ecc](https://github.com/kmackay/micro-ecc)               | Signature verification has subtle side-channel and input-validation failure modes; a reviewed implementation is the correct choice |
 
 ## Repository layout
 

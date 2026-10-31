@@ -9,52 +9,52 @@
 
 ## 1. What am I protecting? (Assets)
 
-| Asset | Why it matters | Impact if compromised |
-| --- | --- | --- |
-| Application firmware integrity | Device must run only code I authored | Attacker executes arbitrary code with full hardware access |
-| Signing Private Key | Single most important thing that makes a signature unforgeable | An attacker can sign arbitrary firmware that every device accepts |
-| Bootloader code | Root of trust — nothing verifies it | Attacker patches out the signature check. All crypto becomes inert |
-| Monotonic rollback counter | Records highest version ever booted; provides freshness, which signatures cannot | Attacker downgrades to a genuinely-signed but known-vulnerable release |
-| Debug interface (SWD) | Can alter execution by reading or writing the flash, RAM and CPU | Override the verification result. Results of failed verification can be altered to pass |
-| Verification public key (bootloader flash) | Not secret, but must not be replaceable — it is the anchor every check is made against | Attacker substitutes their own public key and signs firmware the device will accept |
+| Asset                                      | Why it matters                                                                         | Impact if compromised                                                                   |
+| ------------------------------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Application firmware integrity             | Device must run only code I authored                                                   | Attacker executes arbitrary code with full hardware access                              |
+| Signing Private Key                        | Single most important thing that makes a signature unforgeable                         | An attacker can sign arbitrary firmware that every device accepts                       |
+| Bootloader code                            | Root of trust — nothing verifies it                                                    | Attacker patches out the signature check. All crypto becomes inert                      |
+| Monotonic rollback counter                 | Records highest version ever booted; provides freshness, which signatures cannot       | Attacker downgrades to a genuinely-signed but known-vulnerable release                  |
+| Debug interface (SWD)                      | Can alter execution by reading or writing the flash, RAM and CPU                       | Override the verification result. Results of failed verification can be altered to pass |
+| Verification public key (bootloader flash) | Not secret, but must not be replaceable — it is the anchor every check is made against | Attacker substitutes their own public key and signs firmware the device will accept     |
 
 ---
 
 ## 2. Who is attacking, and what can they do? (Adversaries)
 
-| Adversary | Capabilities | In scope? |
-| --- | --- | --- |
-| Remote attacker | Can send crafted firmware over the update channel; no physical access | Yes |
-| Attacker with physical access | Can use SWD or other debug feature | Yes |
-| Employee with correct credentials | Can access and modify the firmware during early development | No - keys and build systems need organizational level control and security |
-| Attacker with access to the device before consumer gets it | Someone with access during supply chain can flash whatever they want. They can do it before  RDP and WRP are set | Yes |
-| Skilled attacker with access to lab equipment | Can perform glitching, power analysis, decapping, direct flash removal | No, no countermeasures exist in this design, and defending against it needs hardware support this part doesn't have. |
+| Adversary                                                  | Capabilities                                                                                                    | In scope?                                                                                                            |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Remote attacker                                            | Can send crafted firmware over the update channel; no physical access                                           | Yes                                                                                                                  |
+| Attacker with physical access                              | Can use SWD or other debug feature                                                                              | Yes                                                                                                                  |
+| Employee with correct credentials                          | Can access and modify the firmware during early development                                                     | No - keys and build systems need organizational level control and security                                           |
+| Attacker with access to the device before consumer gets it | Someone with access during supply chain can flash whatever they want. They can do it before RDP and WRP are set | Yes                                                                                                                  |
+| Skilled attacker with access to lab equipment              | Can perform glitching, power analysis, decapping, direct flash removal                                          | No, no countermeasures exist in this design, and defending against it needs hardware support this part doesn't have. |
 
 ---
 
 ## 3. What attacks am I defending against?
 
-| # | Attack | Mitigation | Phase |
-| --- | --- | --- | --- |
-| A1 | Attacker rewrites app flash with malicious image | Bootloader verifies ECDSA signature before execution; unsigned image refused | 3 |
-| A2 | Pushing a malicious image over UART | Received image is staged in slot B and its signature verified before the boot pointer is updated; a failing image is discarded and slot A remains active. | 5 (UART update path) |
-| A3 | Reflashing with an older genuine version with vulnerability | A monotonic counter in sector 4 recording the highest version ever booted; images with a lower version are refused. | 4 (rollback counter) |
-| A4 | Overwriting the bootloader itself | WRP on flash sectors 0–3 marks the bootloader read-only at hardware level; no code, including the update path, can erase or program it. | 4 (WRP) |
-| A5 | Reading firmware out over SWD to find secrets | Set RDP to Level 1 | 4 (RDP) |
-| A6 | Interrupting an update to leave the device in a half-written state | Divide storage into two separate slots. The device runs from Bank A while the installer writes the new update to Bank B. The running image is never erased until the new one is verified and activated | 5 (A/B slots) |
+| #   | Attack                                                             | Mitigation                                                                                                                                                                                             | Phase                |
+| --- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
+| A1  | Attacker rewrites app flash with malicious image                   | Bootloader verifies ECDSA signature before execution; unsigned image refused                                                                                                                           | 3                    |
+| A2  | Pushing a malicious image over UART                                | Received image is staged in slot B and its signature verified before the boot pointer is updated; a failing image is discarded and slot A remains active.                                              | 5 (UART update path) |
+| A3  | Reflashing with an older genuine version with vulnerability        | A monotonic counter in sector 4 recording the highest version ever booted; images with a lower version are refused.                                                                                    | 4 (rollback counter) |
+| A4  | Overwriting the bootloader itself                                  | WRP on flash sectors 0–3 marks the bootloader read-only at hardware level; no code, including the update path, can erase or program it.                                                                | 4 (WRP)              |
+| A5  | Reading firmware out over SWD to find secrets                      | Set RDP to Level 1                                                                                                                                                                                     | 4 (RDP)              |
+| A6  | Interrupting an update to leave the device in a half-written state | Divide storage into two separate slots. The device runs from Bank A while the installer writes the new update to Bank B. The running image is never erased until the new one is verified and activated | 5 (A/B slots)        |
 
 ---
 
 ## 4. What am I explicitly NOT defending against? (Out of scope)
 
-| Out of scope | Why |
-| --- | --- |
+| Out of scope                                        | Why                                                                                                                                                                               |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Voltage/clock glitching to skip the signature check | No countermeasures on this part; would require redundant checks, randomized delays, and ideally hardware support. A determined attacker with physical access defeats this design. |
-| Side-channel analysis | Verification is not constant-time or power-balanced, and the F407 has no crypto accelerator or masking support. |
-| Decapping / invasive silicon attacks | Requires specialist lab equipment and destroys the device. Cost to the attacker is disproportionate to the value of a single unit. |
-| Compromise of the signing private key | Organizational control, not a device property. |
-| Attacks on the build machine | Outside the trust boundary. If the signing environment is compromised, malicious firmware is signed legitimately. |
-| Cold-boot RAM attacks | No long-lived secrets are held in RAM — only a public key and an image hash, both non-confidential. Nothing of value to recover. |
+| Side-channel analysis                               | Verification is not constant-time or power-balanced, and the F407 has no crypto accelerator or masking support.                                                                   |
+| Decapping / invasive silicon attacks                | Requires specialist lab equipment and destroys the device. Cost to the attacker is disproportionate to the value of a single unit.                                                |
+| Compromise of the signing private key               | Organizational control, not a device property.                                                                                                                                    |
+| Attacks on the build machine                        | Outside the trust boundary. If the signing environment is compromised, malicious firmware is signed legitimately.                                                                 |
+| Cold-boot RAM attacks                               | No long-lived secrets are held in RAM — only a public key and an image hash, both non-confidential. Nothing of value to recover.                                                  |
 
 ---
 

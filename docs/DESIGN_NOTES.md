@@ -15,7 +15,7 @@ overwriting the metadata sector. The cap is enforced now, before SHA-256 and
 micro-ecc are linked in, so any future overrun is caught at build time.
 
 If you are wondering why 64? I picked 64 becasue its a round number and the address ends at 0x08010000 and It will make the arithmetic easire.
-We could do 32KB (Sector 0-2) but we have 1 MB of total space so we are not going to run out of space anyway.  
+We could do 32KB (Sector 0-2) but we have 1 MB of total space so we are not going to run out of space anyway.
 
 ### Bootloader heap set to zero
 
@@ -91,7 +91,7 @@ and a reviewed library (micro-ecc) is used there instead.
 
 The round constants K[0..63] are the first 32 bits of the fractional parts of
 the cube roots of the first 64 primes; the initial hash values H[0..7] use
-square roots of the first 8 primes. Because they are *derived* rather than
+square roots of the first 8 primes. Because they are _derived_ rather than
 arbitrary, they can be recomputed independently and diffed against the
 transcribed table.
 
@@ -177,11 +177,11 @@ This prevents clearing or modification of the sector.
 
 ![Setting the WRP](Image/Write_Protection.jpg)
 
-*Figure 1: Selecting the WRP*
+_Figure 1: Selecting the WRP_
 
 ![Error](Image/Modification_error.jpg)
 
-*Figure 2: Error on re-flashing the sector 0-3*
+_Figure 2: Error on re-flashing the sector 0-3_
 
 **Read Protection ->**
 To make sure no one can read the data stored we can enable to readout protection.

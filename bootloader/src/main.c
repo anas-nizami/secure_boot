@@ -29,46 +29,48 @@
 #define APP_HEADER_ADDR 0x08020000u
 
 /* System Control Block */
-#define SCB_VTOR        (*(volatile uint32_t *)0xE000ED08u)
+#define SCB_VTOR (*(volatile uint32_t *)0xE000ED08u)
 
 /* SysTick */
-#define SYSTICK_CTRL    (*(volatile uint32_t *)0xE000E010u)
-#define SYSTICK_LOAD    (*(volatile uint32_t *)0xE000E014u)
-#define SYSTICK_VAL     (*(volatile uint32_t *)0xE000E018u)
+#define SYSTICK_CTRL (*(volatile uint32_t *)0xE000E010u)
+#define SYSTICK_LOAD (*(volatile uint32_t *)0xE000E014u)
+#define SYSTICK_VAL (*(volatile uint32_t *)0xE000E018u)
 
 typedef void (*app_entry_t)(void);
 
 void refuse()
 {
-	//Blink RED LED (Present on board) to indicate failure and halt the system
+	// Blink RED LED (Present on board) to indicate failure and halt the system
 	set_red();
-	for (;;) { }
+	for (;;)
+	{
+	}
 }
 
 static void jump_to_app(uint32_t base)
 {
-    uint32_t msp   = *(volatile uint32_t *)(base);      /* vector[0] */
-    uint32_t entry = *(volatile uint32_t *)(base + 4);  /* vector[1] */
+	uint32_t msp = *(volatile uint32_t *)(base);	   /* vector[0] */
+	uint32_t entry = *(volatile uint32_t *)(base + 4); /* vector[1] */
 
-    /* mask all interrupts */
-    __asm volatile ("cpsid i" ::: "memory");
+	/* mask all interrupts */
+	__asm volatile("cpsid i" ::: "memory");
 
-    /* stop SysTick so it can't fire into a stale vector table */
-    SYSTICK_CTRL = 0;
-    SYSTICK_LOAD = 0;
-    SYSTICK_VAL  = 0;
+	/* stop SysTick so it can't fire into a stale vector table */
+	SYSTICK_CTRL = 0;
+	SYSTICK_LOAD = 0;
+	SYSTICK_VAL = 0;
 
-    /* point the vector table at the app */
-    SCB_VTOR = base;
+	/* point the vector table at the app */
+	SCB_VTOR = base;
 
-    /* adopt the app's stack pointer */
-    __asm volatile ("msr msp, %0" :: "r" (msp) : );
+	/* adopt the app's stack pointer */
+	__asm volatile("msr msp, %0" ::"r"(msp) :);
 
-    /* flush pipeline so the new VTOR/MSP take effect before the branch */
-    __asm volatile ("dsb" ::: "memory");
-    __asm volatile ("isb" ::: "memory");
+	/* flush pipeline so the new VTOR/MSP take effect before the branch */
+	__asm volatile("dsb" ::: "memory");
+	__asm volatile("isb" ::: "memory");
 
-    ((app_entry_t)entry)();   /* never returns */
+	((app_entry_t)entry)(); /* never returns */
 }
 
 int main(void)
@@ -78,20 +80,21 @@ int main(void)
 
 	uart_init();
 	uint32_t count_pointer = boot_pointer_get();
-	uint32_t boot_slot_base = (count_pointer & 1) ? SLOT_B_ADDR  : SLOT_A_ADDR; // Alternate between two slots based on the boot pointer count
+	uint32_t boot_slot_base = (count_pointer & 1) ? SLOT_B_ADDR : SLOT_A_ADDR; // Alternate between two slots based on the boot pointer count
 
-	if(count_pointer >= BOOT_POINTER_SECTOR_BYTES) //The Sector counter is full. For the scopr of this project I dont expect this many boot requests. If this happens, it is a sign of a serious problem. Refuse to boot the application.
+	if (count_pointer >= BOOT_POINTER_SECTOR_BYTES) // The Sector counter is full. For the scopr of this project I dont expect this many boot requests. If this happens, it is a sign of a serious problem. Refuse to boot the application.
 	{
 		refuse();
-	}else
+	}
+	else
 	{
-		boot_pointer_switch(); //Increment the boot pointer to mark that a boot request has been made.
+		boot_pointer_switch(); // Increment the boot pointer to mark that a boot request has been made.
 	}
 
 	const img_header_t *hdr = (const img_header_t *)(boot_slot_base);
-	const uint8_t *body     = (const uint8_t *)(boot_slot_base + IMG_HEADER_SIZE);
+	const uint8_t *body = (const uint8_t *)(boot_slot_base + IMG_HEADER_SIZE);
 
-	if(hdr->magic != IMG_MAGIC)
+	if (hdr->magic != IMG_MAGIC)
 	{
 		refuse();
 	}
@@ -105,7 +108,7 @@ int main(void)
 	uint8_t computed[32];
 
 	sha256_init(&ctx);
-	sha256_update(&ctx, (const uint8_t *)hdr, 16);      //magic, version, img_len, reserved
+	sha256_update(&ctx, (const uint8_t *)hdr, 16); // magic, version, img_len, reserved
 	sha256_update(&ctx, body, hdr->img_len);
 	sha256_final(&ctx, computed);
 
@@ -116,7 +119,7 @@ int main(void)
 
 	if (uECC_verify(g_pubkey, computed, 32, hdr->sig, uECC_secp256r1()) != 1)
 	{
-	    refuse();
+		refuse();
 	}
 
 	uint32_t rollback_count = rollback_get_count();
@@ -132,8 +135,9 @@ int main(void)
 
 	jump_to_app(boot_slot_base + IMG_HEADER_SIZE);
 
-	for (;;) { }
+	for (;;)
+	{
+	}
 
 	return 0;
-
 }

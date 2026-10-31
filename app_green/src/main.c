@@ -19,13 +19,11 @@
 #include <stdint.h>
 #include <blinker.h>
 
-
 int main(void)
 {
 	gpio_init();
 	blink_green();
-	//set_orange();
+	// set_orange();
 
 	return 0;
-
 }
