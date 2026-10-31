@@ -4,7 +4,13 @@
 #include <stdint.h>
 
 #define ROLLBACK_COUNTER_BASE_ADDR 0x08010000
+#define BOOT_POINTER_BASE_ADDR  0x0800C000
 #define FLASH_INTERFACE_REGISTER_BASE_ADDR 0x40023C00
+
+#define BOOT_POINTER_SECTOR_BYTES  (16u * 1024u)                     /* sector 3: 16 KB */
+#define BOOT_POINTER_SECTOR_WORDS  (BOOT_POINTER_SECTOR_BYTES / sizeof(uint32_t))
+_Static_assert(BOOT_POINTER_BASE_ADDR + BOOT_POINTER_SECTOR_BYTES
+               == ROLLBACK_COUNTER_BASE_ADDR, "sector 3/4 adjacency");
 
 #define ROLLBACK_SECTOR_BYTES  (64u * 1024u)                          /* sector 4: 64 KB */
 #define ROLLBACK_SECTOR_WORDS  (ROLLBACK_SECTOR_BYTES / sizeof(uint32_t))
@@ -27,6 +33,8 @@ typedef enum {
 }flash_error_status;
 
 uint32_t rollback_get_count(void);           /* scan sector 4 */
-int rollback_increment(uint32_t n);     /* write n bytes of 0x00 */
+int rollback_increment(uint32_t n);          /* write n bytes of 0x00 */
+uint32_t boot_pointer_get(void);             /* get the boot pointer value */
+int boot_pointer_switch(void);        /* write 1 byte of 0x00 to mark the increment of sector.*/
 
 #endif // FLASH_H

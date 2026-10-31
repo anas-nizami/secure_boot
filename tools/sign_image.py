@@ -32,11 +32,19 @@ def write_file(file_name, data):
         print(f"Error: Unable to write file - {file_name}")
         sys.exit(1)
 
-def build(version, key_file):
+def build(version, key_file, path_to_input_bin):
     REPO_ROOT = Path(__file__).resolve().parent.parent
+
+    in_bin = REPO_ROOT / path_to_input_bin
+    if not in_bin.is_file():
+        sys.exit(f"input not found: {in_bin}")
     
-    body = read_file(REPO_ROOT / 'app' / 'Debug' / 'Secure_Boot_App.bin')  # Read the application binary file in binary mode, without the b in rb, it would read it in text mode, which could cause issues with binary data.
-    out_bin = REPO_ROOT / 'flash_image' / key_file.replace('.pem', f'_{version}.bin')  # Replace the .pem extension with .bin for the output file name
+    body = read_file(in_bin)  # Read the application binary file in binary mode, without the b in rb, it would read it in text mode, which could cause issues with binary data.
+
+    out_bin = REPO_ROOT / 'flash_image' / f'{in_bin.stem}_v{version}.bin'
+    out_bin.parent.mkdir(parents=True, exist_ok=True)
+    if in_bin.resolve() == out_bin.resolve():
+        sys.exit("output would overwrite the input")
 
     private_key_file = read_file(REPO_ROOT / 'keys' / key_file)  # Read the private key file in binary mode
     private_key = load_pem_private_key(private_key_file, password=None, backend=default_backend())  # Load the private key from the PEM file
@@ -91,7 +99,7 @@ def build(version, key_file):
     print(f"{len(body)} bytes, sha256={digest.hex()}")
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print("usage: sign_image.py  <version> <key.pem>")
+    if len(sys.argv) != 4:
+        print("usage: sign_image.py  <version> <key.pem> <path/to/input.bin>")
         sys.exit(1)
-    build(int(sys.argv[1]), sys.argv[2])
+    build(int(sys.argv[1]), sys.argv[2], sys.argv[3])

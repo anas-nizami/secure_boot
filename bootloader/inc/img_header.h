@@ -7,6 +7,8 @@
 #define IMG_HEADER_SIZE 512u
 #define APP_HEADER_ADDR 0x08020000u
 #define APP_BODY_ADDR   0x08020200u
+#define SLOT_A_ADDR 0x08020000
+#define SLOT_B_ADDR 0x08040000
 #define APP_SLOT_SIZE   (384u * 1024u)
 
 typedef struct {
