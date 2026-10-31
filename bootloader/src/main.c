@@ -77,18 +77,19 @@ int main(void)
 	gpio_blink();
 
 	uart_init();
-	for (;;)
+	uint32_t count_pointer = boot_pointer_get();
+	uint32_t boot_slot_base = (count_pointer & 1) ? SLOT_B_ADDR  : SLOT_A_ADDR; // Alternate between two slots based on the boot pointer count
+
+	if(count_pointer >= BOOT_POINTER_SECTOR_BYTES) //The Sector counter is full. For the scopr of this project I dont expect this many boot requests. If this happens, it is a sign of a serious problem. Refuse to boot the application.
 	{
-	    int c = uart_getc();
-	    if (c >= 0)
-	    {
-	    	uart_putc('*');
-	    	uart_putc((char)c);
-	    }
+		refuse();
+	}else
+	{
+		boot_pointer_switch(); //Increment the boot pointer to mark that a boot request has been made.
 	}
 
-	const img_header_t *hdr = (const img_header_t *)APP_HEADER_ADDR;
-	const uint8_t *body     = (const uint8_t *)APP_BODY_ADDR;
+	const img_header_t *hdr = (const img_header_t *)(boot_slot_base);
+	const uint8_t *body     = (const uint8_t *)(boot_slot_base + IMG_HEADER_SIZE);
 
 	if(hdr->magic != IMG_MAGIC)
 	{
@@ -129,7 +130,7 @@ int main(void)
 		refuse();
 	}
 
-	jump_to_app(APP_BODY_ADDR);
+	jump_to_app(boot_slot_base + IMG_HEADER_SIZE);
 
 	for (;;) { }
 
