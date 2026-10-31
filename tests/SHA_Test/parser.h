@@ -2,10 +2,10 @@
  * @file parser.h
  * @brief RSP file parser for NIST test vectors.
  *
- * Test-harness support code,
- *
- * ***** AI-generated and reviewed. Not part of the bootloader *********;
- *
+ * Test-harness support code, 
+ * 
+ * ***** AI-generated and reviewed. Not part of the bootloader *********; 
+ * 
  * no parser code is compiled into the target image.
  */
 
@@ -16,8 +16,7 @@
 
 #define TV_MAX 128 /* SHA256ShortMsg.rsp has 65 (0..512 bits, step 8) */
 
-struct test_vector
-{
+struct test_vector {
     int length;
     char msg[4096];
     char digest[4096];

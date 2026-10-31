@@ -9,11 +9,11 @@ Reset circuitry releases the core once supply is stable.
 Hardware samples BOOT0/BOOT1 at the reset edge to decide what is aliased
 to address 0x00000000:
 
-| BOOT1 | BOOT0 | Aliased to 0x00000000 | Runs               |
-| ----- | ----- | --------------------- | ------------------ |
-| x     | 0     | Main flash 0x08000000 | This bootloader    |
-| 0     | 1     | System memory ROM     | ST DFU/UART loader |
-| 1     | 1     | SRAM 0x20000000       | Whatever is in RAM |
+| BOOT1 | BOOT0 | Aliased to 0x00000000 | Runs                    |
+|-------|-------|-----------------------|-------------------------|
+| x     | 0     | Main flash 0x08000000 | This bootloader         |
+| 0     | 1     | System memory ROM     | ST DFU/UART loader      |
+| 1     | 1     | SRAM 0x20000000       | Whatever is in RAM      |
 
 On the Discovery board BOOT0 is jumpered low, so main flash is selected.
 Security note: an attacker able to pull BOOT0 high reaches ST's factory
@@ -22,13 +22,13 @@ loader and bypasses this bootloader entirely without touching its code.
 ## 3. Core fetches the first two vectors
 
 The Cortex-M4 unconditionally reads:
-word 0 (offset 0x00) -> initial MSP
-word 1 (offset 0x04) -> initial PC (Reset_Handler)
+  word 0 (offset 0x00) -> initial MSP
+  word 1 (offset 0x04) -> initial PC (Reset_Handler)
 The core has no knowledge of what is mapped there; BOOT0/BOOT1 decided that.
 
 ## 4. Bootloader Reset_Handler
 
-Startup code copies .data from flash to RAM, zeroes .bss section, and then
+Startup code copies .data from flash to RAM, zeroes .bss  section, and then
 branches to main().
 
 ## 5. Bootloader main()
@@ -66,8 +66,8 @@ flash, and a raw image flashed without a header.
 
 SHA-256 over two regions, in order:
 
-1. the 16-byte header prefix — magic, version, img_len, reserved
-2. the application body — img_len bytes from 0x08020200
+  1. the 16-byte header prefix — magic, version, img_len, reserved
+  2. the application body — img_len bytes from 0x08020200
 
 The digest covers the header fields as well as the body.
 An earlier version hashed the body alone, which left version and img_len unauthenticated: the
@@ -113,9 +113,9 @@ digest, but cannot produce a valid signature over it.
 
 stored = number of leading 0x00 bytes in sector 4 (0x08010000)
 
-version < stored refuse — downgrade attempt
-version == stored boot, write nothing
-version > stored write (version - stored) bytes of 0x00, then boot
+  version <  stored   refuse — downgrade attempt
+  version == stored   boot, write nothing
+  version >  stored   write (version - stored) bytes of 0x00, then boot
 
 Reached only after signature verification, because version is untrusted
 until then.
@@ -138,7 +138,7 @@ This is the property the whole design rests on.
 
 ## 12. Branch to the application's Reset_Handler
 
-entry = _(uint32_t _)0x08020204 (word 1 of the app's vector table)
+entry = *(uint32_t *)0x08020204  (word 1 of the app's vector table)
 Note: this is the Reset_Handler, NOT main(). The address is odd — bit 0
 set indicates Thumb state. Branching to an even address faults, as the
 M4 has no ARM mode.

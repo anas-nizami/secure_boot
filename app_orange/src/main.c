@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <blinker.h>
 
+
 int main(void)
 {
 	gpio_init();
