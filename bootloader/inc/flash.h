@@ -29,8 +29,15 @@ typedef enum {
     FLASH_LOCKED = 4,
     FLASH_PROGRAMMING_ERROR = 5,
     FLASH_WRITE_FAILED = 6,
-    FLASH_BSY_TIMEOUT_ERROR = 7
+    FLASH_BSY_TIMEOUT_ERROR = 7,
+	FLASH_BAD_ARG = 8
 }flash_error_status;
+
+typedef enum {
+    FLASH_OP_PROGRAM_X8,
+    FLASH_OP_PROGRAM_X32,
+    FLASH_OP_ERASE_SECTOR,
+} flash_op_t;
 
 uint32_t rollback_get_count(void);           /* scan sector 4 */
 int rollback_increment(uint32_t n);          /* write n bytes of 0x00 */

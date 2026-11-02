@@ -9,7 +9,8 @@
 #define APP_BODY_ADDR   0x08020200u
 #define SLOT_A_ADDR 0x08020000
 #define SLOT_B_ADDR 0x08040000
-#define APP_SLOT_SIZE   (384u * 1024u)
+#define APP_SLOT_SIZE   (128u * 1024u)
+_Static_assert(SLOT_A_ADDR + APP_SLOT_SIZE <= SLOT_B_ADDR, "slots overlap");
 
 typedef struct {
     uint32_t magic;

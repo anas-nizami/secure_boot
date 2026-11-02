@@ -38,6 +38,55 @@ static int flash_wait_bsy(void) {
     return FLASH_SUCCESS;
 }
 
+flash_error_status flash_begin(flash_op_t op, uint8_t sector){
+    
+    uint8_t psize = 0u; // Default to x8 programming
+    switch(op)
+    {
+    	case FLASH_OP_PROGRAM_X8:   psize = 0u; break;   /* 00 = x8  */
+        case FLASH_OP_PROGRAM_X32:  psize = 2u; break;   /* 10 = x32 */
+        case FLASH_OP_ERASE_SECTOR: psize = 2u; break;   /* 10 = x32, fastest legal erase at 3V */
+        default:
+        	return FLASH_BAD_ARG;
+    }
+
+    if(flash_wait_bsy() == FLASH_BSY_TIMEOUT_ERROR) 
+    {
+        // Flash is busy, and we have timed out, cannot proceed with programming
+        return FLASH_BSY_TIMEOUT_ERROR;
+    }
+
+    FLASH_KEYR = 0x45670123; // Unlock key 1
+    FLASH_KEYR = 0xCDEF89AB; // Unlock key 2
+
+    if(FLASH_CR & (1u<<31)) { // Check if the LOCK bit (LOCK -> 31) is set in the FLASH_CR register
+        return FLASH_LOCKED; // Flash is locked, cannot proceed with programming
+    }
+
+    const uint32_t clear_error_mask = (1u<<7)       // Clear the PGSERR: Programming sequence error
+                             | (1u<<6)       // Clear the PGPERR: Programming parallelism error
+                             | (1u<<5)       // Clear the PGAERR: Programming alignment error
+                             | (1u<<4)       // Clear the WRPERR: Write protection error
+                             | (1u<<1)       // Clear the OPERR: Operation error
+                             | (1u<<0);      // Clear the EOP: End of operation
+
+    FLASH_SR = clear_error_mask; // Clear any existing error flags
+
+    FLASH_CR &= ~(0x3u<<8); // Clear the Program size (PSIZE -> 9:8) bits to enable Program Parallelism. 0b00: x8
+    FLASH_CR |= (psize<<8); // 0=x8, 2=x32
+
+    if (op == FLASH_OP_ERASE_SECTOR) {
+        FLASH_CR &= ~(0xFu << 3);      /* clear SNB */
+        FLASH_CR |=  ((uint32_t)sector << 3);
+        FLASH_CR |=  (1u << 1);        /* SER */
+    } else {
+        FLASH_CR |= (1u<<0); // Set the Programming (PG -> 0) bit to 1 to enable programming mode.
+    }
+
+    return FLASH_SUCCESS;
+}
+
+
 int rollback_increment(uint32_t n) {
     
     if (n == 0) {
@@ -53,31 +102,9 @@ int rollback_increment(uint32_t n) {
         return VERSION_UPDATE_COUNT_FULL; // Exceeds maximum allowed count. Counter is full and cannot accommodate the requested increment.
     }
 
-    if(flash_wait_bsy() == FLASH_BSY_TIMEOUT_ERROR) 
-    {
-        // Flash is busy, and we have timed out, cannot proceed with programming
-        return FLASH_BSY_TIMEOUT_ERROR;
-    }
+    flash_op_t op = FLASH_OP_PROGRAM_X8;
+    flash_error_status flash_write_error = flash_begin(op, 0);
 
-    FLASH_KEYR = 0x45670123; // Unlock key 1
-    FLASH_KEYR = 0xCDEF89AB; // Unlock key 2
-    
-    if(FLASH_CR & (1u<<31)) { // Check if the LOCK bit (LOCK -> 31) is set in the FLASH_CR register
-        return FLASH_LOCKED; // Flash is locked, cannot proceed with programming
-    }
-
-    const uint32_t clear_error_mask = (1u<<7)       // Clear the PGSERR: Programming sequence error
-                             | (1u<<6)       // Clear the PGPERR: Programming parallelism error
-                             | (1u<<5)       // Clear the PGAERR: Programming alignment error
-                             | (1u<<4)       // Clear the WRPERR: Write protection error
-                             | (1u<<1)       // Clear the OPERR: Operation error
-                             | (1u<<0);      // Clear the EOP: End of operation
-    FLASH_SR = clear_error_mask; // Clear any existing error flags
-
-    FLASH_CR &= ~(0x3u<<8); // Clear the Program size (PSIZE -> 9:8) bits to enable Program Parallelism. 0b00: x8 
-    FLASH_CR |= (0x1u<<0);  // Set the Programming (PG -> 0) bit to 1 to enable programming mode.
-    
-    flash_error_status flash_write_error = FLASH_SUCCESS;
     for(size_t i = 0; i < n; i++) {
         
         volatile uint8_t *target_address = (volatile uint8_t *)(ROLLBACK_COUNTER_BASE_ADDR + current_count + i);
@@ -103,7 +130,7 @@ int rollback_increment(uint32_t n) {
     }
 
     exit:
-        FLASH_CR &= ~(1u<<0); // Clear the Programming (PG -> 0) bit to disable programming mode.
+        FLASH_CR &= ~(0x3u<<0); // Clear the Programming (PG -> 0) bit and SER to disable programming mode.
         FLASH_CR |= (1u<<31); // Set the LOCK bit (LOCK -> 31) to lock the flash again after programming
         return flash_write_error; // Return the status of the flash operation
 
@@ -124,30 +151,8 @@ uint32_t boot_pointer_get() {
 int boot_pointer_switch(void) {
     uint32_t current_count = boot_pointer_get();
     
-    flash_error_status flash_write_error = FLASH_SUCCESS;
-    if(flash_wait_bsy() == FLASH_BSY_TIMEOUT_ERROR) 
-    {
-        // Flash is busy, and we have timed out, cannot proceed with programming
-        return FLASH_BSY_TIMEOUT_ERROR;
-    }
-
-    FLASH_KEYR = 0x45670123; // Unlock key 1
-    FLASH_KEYR = 0xCDEF89AB; // Unlock key 2
-    
-    if(FLASH_CR & (1u<<31)) { // Check if the LOCK bit (LOCK -> 31) is set in the FLASH_CR register
-        return FLASH_LOCKED; // Flash is locked, cannot proceed with programming
-    }
-
-    const uint32_t clear_error_mask = (1u<<7)       // Clear the PGSERR: Programming sequence error
-                             | (1u<<6)       // Clear the PGPERR: Programming parallelism error
-                             | (1u<<5)       // Clear the PGAERR: Programming alignment error
-                             | (1u<<4)       // Clear the WRPERR: Write protection error
-                             | (1u<<1)       // Clear the OPERR: Operation error
-                             | (1u<<0);      // Clear the EOP: End of operation
-    FLASH_SR = clear_error_mask; // Clear any existing error flags
-
-    FLASH_CR &= ~(0x3u<<8); // Clear the Program size (PSIZE -> 9:8) bits to enable Program Parallelism. 0b00: x8 
-    FLASH_CR |= (0x1u<<0);  // Set the Programming (PG -> 0) bit to 1 to enable programming mode.
+    flash_op_t op = FLASH_OP_PROGRAM_X8;
+    flash_error_status flash_write_error = flash_begin(op, 0);
 
     volatile uint8_t *target_address = (volatile uint8_t *)(BOOT_POINTER_BASE_ADDR + current_count);
     *target_address = 0x0; // Write 0x00 to increment the rollback counter

@@ -24,8 +24,6 @@ int main(void)
 {
 	gpio_init();
 	blink_green();
-	//set_orange();
 
 	return 0;
-
 }
